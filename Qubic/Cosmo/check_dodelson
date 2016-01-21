@@ -1,0 +1,250 @@
+from __future__ import division
+
+import healpy as hp
+import matplotlib.pyplot as mp
+import numpy as np
+import pycamb
+#from qubic.utils import progress_bar
+from Homogeneity import fitting
+from Cosmo import Fisher
+
+##### Base Cosmology
+## parameters from Planck 2013 results XV. CMB Power spectra ..., table 8, Planck+WP
+## Archiv 1303.5075
+H0 = 67.04
+omegab = 0.022032
+omegac = 0.12038
+h2 = (H0/100.)**2
+scalar_amp = np.exp(3.098)/1.E10
+omegav = h2 - omegab - omegac
+Omegab = omegab/h2
+Omegac = omegac/h2
+rvalue = 0.2
+print 'Omegab = ',omegab/h2,'Omegam = ',(omegac+omegab)/h2,'Omegav = ',omegav/h2
+params = {'H0':H0,'omegab':Omegab,'omegac':Omegac,'omegak':0,'scalar_index':0.9624,
+         'reion__use_optical_depth':True,'reion__optical_depth':0.0925,
+         'tensor_ratio':rvalue,'WantTensors':True,'scalar_amp':scalar_amp,'DoLensing':False,
+         'tensor_index':-rvalue/8, 'lensing_amplitude':1.}
+
+
+##### Fisher Analysis
+## First run to get the derivatives and spectra
+deltal = 5
+s_nt, ssvl_nt, der_nt, spectra_nt, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, 1., 1., 0.5, 1., 
+	der=None, spectra = None, consistency = False, deltal=deltal)
+
+#s, ssvl, der, spectra, fmrt, fmrtsvl = Fisher.get_tratio_accuracy(params, 1., 1., 0.5, 1., der=None, spectra =None, consistency=True)
+
+#s_nt, ssvl_nt, der_nt, spectra_nt, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, 1., 1., 0.5, 1., der=None, spectra = None, consistency = False)
+
+
+# BICEP prediction should find s[0] ~ 0.05
+fsky = 384/41000
+mukarcmin = 87/1000*60
+lens_res = 1
+fwhmdeg = 0.52
+s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, plotmat=True, fixed=[1,2])
+print(s)
+print(s_svl)
+
+
+
+
+
+###########################################
+# try dodelson's plots
+
+#### not perfect agreement with dodelson's way of doing things: he seems to fix all parameters instead of marginalizing
+
+
+# figure 1 : no need to go beyond l=150, and no need for reionization bump
+# true with whatever beam as we look at the svl limits
+fsky = 1
+mukarcmin = 87/1000*60
+lens_res = 1.
+fwhmdeg = 30./60
+lcut = np.arange(90)*10
+sr_lo = np.zeros(len(lcut))
+sr_hi = np.zeros(len(lcut))
+for i in np.arange(len(lcut)):
+	print(i)
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, min_ell = lcut[i], fixed=[1,2], max_ell=1000)
+	sr_lo[i] = s_svl[0]
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, max_ell = lcut[i], fixed=[1,2], min_ell=1)
+	sr_hi[i] = s_svl[0]
+
+clf()
+plot(lcut,0.2/sr_lo,'r--')
+plot(lcut,0.2/sr_hi,'b--')
+ylim(0,100)
+
+
+
+# figure 2 : situation not changed when removing lensing, just accuracy increased by ~ 2
+fsky = 1
+mukarcmin = 87/1000*60
+lens_res = 0.05
+fwhmdeg = 30./60
+lcut = np.arange(90)*10
+sr_lo = np.zeros(len(lcut))
+sr_hi = np.zeros(len(lcut))
+for i in np.arange(len(lcut)):
+	print(i)
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, min_ell = lcut[i], fixed=[1,2], max_ell=1000)
+	sr_lo[i] = s_svl[0]
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, max_ell = lcut[i], fixed=[1,2], min_ell=1)
+	sr_hi[i] = s_svl[0]
+
+#clf()
+plot(lcut,0.2/sr_lo,'r')
+plot(lcut,0.2/sr_hi,'b')
+xlabel('$\ell$')
+ylabel('$\sigma_r$ (S.V.L.)')
+ylim(0,250)
+
+
+
+### figure 3: with noise but no beam
+
+nnx = 30
+nny = 30
+mukdeg = np.logspace(-2, 0, nny)
+mukarcmin = mukdeg * 60
+fsky = np.logspace(-2, 0, nnx)
+fwhmdeg = 0.001/60
+lens_res = 1
+sigs_r = np.zeros((nny, nnx))
+sigs_r_svl = np.zeros((nny, nnx))
+sigs_nt = np.zeros((nny, nnx))
+sigs_nt_svl = np.zeros((nny, nnx))
+for j in np.arange(nnx):
+	for i in np.arange(nny):
+		print('Num:', j, i)
+		s, s_svl, dum, dum, dum, dum = Fisher.get_tratio_accuracy(params, fsky[j], mukarcmin[i], fwhmdeg, lens_res, 
+			der=der_nt, spectra=spectra_nt, consistency=False, fixed=[1,2])
+		sigs_r[i,j] = s[0]
+		sigs_r_svl[i,j] = s_svl[0]
+		sigs_nt[i,j] = s[1]
+		sigs_nt_svl[i,j] = s_svl[1]
+
+
+clf()
+imshow(0.2/sigs_r, origin='upper left', interpolation = 'nearest',extent=[np.log10(fsky[0]),0,np.log10(mukdeg[0]),0])
+xlabel('$Log(f_{sky})$')
+ylabel('$Log(\sigma_n) [\mu K.deg]$')
+title('$r/\sigma_r$ - FWHM=0 - No Delensing')
+colorbar()
+
+### figure 4: with noise and 1 degree beam
+### Get more degradation than Dodelson
+nnx = 30
+nny = 30
+mukdeg = np.logspace(-2, 0, nny)
+mukarcmin = mukdeg * 60
+fsky = np.logspace(-2, 0, nnx)
+fwhmdeg = 60./60
+lens_res = 1
+sigs_r = np.zeros((nny, nnx))
+sigs_r_svl = np.zeros((nny, nnx))
+sigs_nt = np.zeros((nny, nnx))
+sigs_nt_svl = np.zeros((nny, nnx))
+for j in np.arange(nnx):
+	for i in np.arange(nny):
+		print('Num:', j, i)
+		s, s_svl, dum, dum, dum, dum = Fisher.get_tratio_accuracy(params, fsky[j], mukarcmin[i], fwhmdeg, lens_res, 
+			der=der_nt, spectra=spectra_nt, consistency=False, fixed=[1,2])
+		sigs_r[i,j] = s[0]
+		sigs_r_svl[i,j] = s_svl[0]
+		sigs_nt[i,j] = s[1]
+		sigs_nt_svl[i,j] = s_svl[1]
+
+
+clf()
+imshow(0.2/sigs_r, origin='upper left', interpolation = 'nearest',extent=[np.log10(fsky[0]),0,np.log10(mukdeg[0]),0])
+xlabel('$f_{sky}$')
+ylabel('$\sigma_n [\mu K.deg]$')
+title('$r/\sigma_r$ - FWHM=1 deg. - No Delensing')
+colorbar()
+
+
+## figure 4
+fsky = 1
+mukarcmin = 87/1000*60
+lens_res = 1.
+fwhmdeg = 30./60
+lcut = np.arange(90)*10
+sr_lo = np.zeros(len(lcut))
+sr_hi = np.zeros(len(lcut))
+for i in np.arange(len(lcut)):
+	print(i)
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, min_ell = lcut[i], max_ell=1000, fixed=1)
+	sr_lo[i] = s_svl[1]
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, max_ell = lcut[i], min_ell=1,fixed=1)
+	sr_hi[i] = s_svl[1]
+
+clf()
+plot(lcut,0.025/sr_lo,'r')
+plot(lcut,0.025/sr_hi,'b')
+ylim(0,1.2)
+
+## figure 5: je trouve un résultat un peu différent car je pense que dodelson fixe le niveau du lensing au lien de marginaliser dessus
+fsky = 1
+mukarcmin = 87/1000*60
+lens_res = 0.05
+fwhmdeg = 30./60
+lcut = np.arange(90)*10
+sr_lo = np.zeros(len(lcut))
+sr_hi = np.zeros(len(lcut))
+for i in np.arange(len(lcut)):
+	print(i)
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, min_ell = lcut[i], max_ell=1000)
+	sr_lo[i] = s_svl[1]
+	s, s_svl, dum, dum, fmnt, fmntsvl = Fisher.get_tratio_accuracy(params, fsky, mukarcmin, fwhmdeg, lens_res, 
+		der=der_nt, spectra=spectra_nt, consistency=False, max_ell = lcut[i], min_ell=1)
+	sr_hi[i] = s_svl[1]
+
+clf()
+plot(lcut,0.025/sr_lo,'r')
+plot(lcut,0.025/sr_hi,'b')
+ylim(0,4)
+
+
+
+### figure 7: je trouve un résultat un peu différent car je pense que dodelson fixe le niveau du lensing au lien de marginaliser dessus
+nnx = 30
+nny = 30
+mukdeg = np.logspace(-3, 0, nny)
+mukarcmin = mukdeg * 60
+fsky = np.logspace(-2, 0, nnx)
+fwhmdeg = 1./60
+lens_res = 0.05
+sigs_r = np.zeros((nny, nnx))
+sigs_r_svl = np.zeros((nny, nnx))
+sigs_nt = np.zeros((nny, nnx))
+sigs_nt_svl = np.zeros((nny, nnx))
+for j in np.arange(nnx):
+	for i in np.arange(nny):
+		print('Num:', j, i)
+		s, s_svl, dum, dum, dum, dum = Fisher.get_tratio_accuracy(params, fsky[j], mukarcmin[i], fwhmdeg, lens_res, 
+			der=der_nt, spectra=spectra_nt, consistency=False, fixed=2)
+		sigs_r[i,j] = s[0]
+		sigs_r_svl[i,j] = s_svl[0]
+		sigs_nt[i,j] = s[1]
+		sigs_nt_svl[i,j] = s_svl[1]
+
+
+clf()
+imshow(0.025/sigs_nt, origin='upper left', interpolation = 'nearest',extent=[np.log10(fsky[0]),0,np.log10(mukdeg[0]),0])
+xlabel('$f_{sky}$')
+ylabel('$\sigma_n [\mu K.deg]$')
+colorbar()
+
+

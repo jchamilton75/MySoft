@@ -1,0 +1,164 @@
+# -*- coding: utf-8 -*-
+from pylab import *
+from numpy import *
+from matplotlib import *
+from scipy import integrate
+
+#####Données initiales#####
+nbr_tirages=1e6
+bins=100
+#Données initiales pour les lois à tester (5.1 et 5.2)
+min_u=-10.
+max_u=10.
+nbr_u=10000
+u=linspace(min_u,max_u,nbr_u)
+pas_u=(max_u-min_u)/nbr_u
+
+######################## Fonction PDF loi gaussienne ##################################
+def PDFLG(esperance,ecart_type,valeurs):
+	return 1./(ecart_type*sqrt(2*pi))*exp(-0.5*((valeurs-esperance)/ecart_type)**2)
+#######################################################################################
+
+#5 GENERATION DE NOMBRES ALEATOIRES SUIVANT UNE DISTRIBUTION QUELCONQUE
+#======================================================================
+
+#####Initialisation de la fenetre graphique#####
+plt.close("all")
+plt.figure(1)
+#####Génère les distributions#####
+u1=rand(nbr_tirages)
+u2=rand(nbr_tirages)
+z1=sin(2*pi*u1)*sqrt(-2*log(u2))
+print "Distribution z1: moyenne = %f, écart type = %f"%(mean(z1),std(z1))
+z2=cos(2*pi*u1)*sqrt(-2*log(u2))
+print "Distribution z2: moyenne = %f, écart type = %f"%(mean(z2),std(z2))
+x=concatenate((z1,z2))
+print "Somme de Dz1 et Dz2: moyenne = %f, écart type = %f"%(mean(x),std(x))
+#####Trace les courbes en Log#####
+###z1
+plt.subplot(131)
+plt.title("Dz1 %d tirages, %d bins"%(nbr_tirages,bins))
+h=hist(z1,bins)	#Histogramme
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(h[1],nbr_tirages*largeur_bins*PDFLG(0,1,h[1]),'r',linewidth=2)	#Forme théorique
+###z2
+plt.subplot(132)
+plt.title("Dz2 %d tirages, %d bins"%(nbr_tirages,bins))
+h=hist(z2,bins)	#Histogramme
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(h[1],nbr_tirages*largeur_bins*PDFLG(0,1,h[1]),'r',linewidth=2)	#Forme théorique
+###z1+z2
+plt.subplot(133)
+plt.title("Dz1 + Dz2")
+h=hist(x,bins)	#Histogramme
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(h[1],2*nbr_tirages*largeur_bins*PDFLG(0,1,h[1]),'r',linewidth=2)	#Forme théorique
+
+show()
+
+#5.1 METHODE DE LA TRANSFORMEE INVERSE
+#=====================================
+
+############### Fonction Distribution cumulative ############################
+def distrib_cumul(nbr_valeurs,pas_valeurs,valeurs,distrib_valeurs):
+	y=[0]
+	for i in xrange(1,nbr_valeurs):
+		y=append(y,y[i-1]+distrib_valeurs[i]*pas_valeurs)
+	return y
+#############################################################################
+
+#Initialisation de la fenetre graphique
+plt.figure(2)
+
+############### Test avec une loi normale ###############
+#Forme analytique de la PDF: loi normale
+subplot(231)
+plt.title("Transformee inverse: loi normale")
+plt.plot(u,PDFLG(0,1,u))
+#Distribution cumulative
+Fcumul=distrib_cumul(nbr_u,pas_u,u,PDFLG(0,1,u))
+subplot(232)
+plt.plot(u,Fcumul)
+#Génération numérique suivant la PDF
+tirages_unif=rand(nbr_tirages)
+x=interp(tirages_unif,Fcumul,u)
+subplot(233)
+h=hist(x,bins)
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(u,nbr_tirages*largeur_bins*PDFLG(0,1,u),'r',linewidth='2')
+
+############### Test avec somme de deux Gaussiennes et d'une Lorentzienne ###############
+#Forme analytique de la PDF: somme de 2 Gaussiennes + 1 Lorentzienne
+a0,m0,s0,a1,m1,s1,a2,m2,s2=1,-5,0.2,1./2,-2,1./2,3./2,5,1
+PDF=a0*exp(-(u-m0)**2/(2*s0**2))+a1*exp(-(u-m1)**2/(2*s1**2))+a2/(1+(u-m2)**2/s2**2)
+PDFanalytique=PDF/integrate.trapz(PDF,x=u)
+subplot(234)
+plt.title("Transformee inverse: 2 Gaussienne + 1 Lorentzienne")
+plt.plot(u,PDFanalytique)
+#Distribution cumulative
+Fcumul=distrib_cumul(nbr_u,pas_u,u,PDFanalytique)
+subplot(235)
+plt.plot(u,Fcumul)
+#Génération numérique suivant la PDF
+tirages_unif=rand(nbr_tirages)
+x=interp(tirages_unif,Fcumul,u)
+subplot(236)
+h=hist(x,bins)
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(u,nbr_tirages*largeur_bins*PDFanalytique,'r',linewidth='2')
+
+show()
+
+#5.2 METHODE ACCEPTANCE-REJECTION (VON NEUMANN)
+#==============================================
+
+#Initialisation de la fenetre graphique
+plt.figure(3)
+
+############### Test avec une loi normale ###############
+#Forme analytique de la PDF: loi normale
+PDF=PDFLG(0,1,u)
+PDFanalytique=PDF/integrate.trapz(PDF,x=u)
+
+#Méthode
+x=[0]
+compteur=0
+while compteur<=nbr_tirages:
+	tirage1=rand(nbr_u)*(max_u-min_u)+min_u	#Premier tirage sur u tel que PDFanalytique non nulle. Tire un vecteur parcequ'en tirant des valeurs une a une le processus est beaucoup trop long pour atteindre les nbr_tirages voulues
+	PDF=interp(tirage1,u,PDFanalytique)
+	tirage2=rand(nbr_u)	#Deuxième tirage aléatoire tiré uniformément sur [0,1[ de meme dimension que tirage1
+	x_retenu=where(tirage2-PDF<=0) #Compare les valeurs des deux tirages une a une
+	x=append(x,tirage1[x_retenu])	#incrémente les valeurs retenues dans le vecteur solution
+	compteur=size(x)-1
+#Représentation
+subplot(121)
+plt.title("Acceptance-Rejection: loi normale")
+h=hist(x[1:nbr_tirages+1],bins)	#Sélectionne le bon nombre de valeurs pour l'histogramme(supprime les valeurs en trop obtenues lors de la dernière boucle while)
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(u,nbr_tirages*largeur_bins*PDFanalytique,'r',linewidth='2')
+
+############### Test avec somme de deux Gaussiennes et d'une Lorentzienne ###############
+#Forme analytique de la PDF: somme de 2 Gaussiennes + 1 Lorentzienne
+a0,m0,s0,a1,m1,s1,a2,m2,s2=1,-5,0.2,1./2,-2,1./2,3./2,5,1
+PDF=a0*exp(-(u-m0)**2/(2*s0**2))+a1*exp(-(u-m1)**2/(2*s1**2))+a2/(1+(u-m2)**2/s2**2)
+PDFanalytique=PDF/integrate.trapz(PDF,x=u)
+
+#Méthode
+x=[0]
+compteur=0
+while compteur<=nbr_tirages:
+	tirage1=rand(nbr_u)*(max_u-min_u)+min_u
+	PDF=interp(tirage1,u,PDFanalytique)
+	tirage2=rand(nbr_u)
+	x_retenu=where(tirage2-PDF<=0)
+	x=append(x,tirage1[x_retenu])
+	compteur=size(x)-1
+#Représentation
+subplot(122)
+plt.title("Acceptance-Rejection: 2 Gaussienne + 1 Lorentzienne")
+h=hist(x[1:nbr_tirages+1],bins)	
+largeur_bins=h[1][1]-h[1][0]
+plt.plot(u,nbr_tirages*largeur_bins*PDFanalytique,'r',linewidth='2')
+
+show()
+

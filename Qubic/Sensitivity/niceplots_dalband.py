@@ -247,11 +247,11 @@ ylim(0,0.03)
 cols = ['b','g','r']
 xlabel('$\ell$')
 ylabel('$\ell(\ell+1)C_\ell / 2\pi \,\,\,[\mu K^2]$')
-plot(lll, dllensing,'k', lw=2,label ='BB Lensing')
-plot(lll, fact*cl150x150[2],'k:',lw=2, label ='Dust 150 GHz')
+plot(lll, dllensing,'k', lw=4,label ='BB Lensing')
+plot(lll, fact*cl150x150[2],'k:',lw=4, label ='Dust 150 GHz')
 for i in xrange(len(rvalues)):
-	plot(lll, thecl[i],'--',lw=2, label ='BB r={}'.format(rvalues[i]), color=cols[i])
-	plot(lll, thecl[i]+dllensing+fact*cl150x150[2],lw=2, color=cols[i])
+	plot(lll, thecl[i],'--',lw=4, label ='BB r={}'.format(rvalues[i]), color=cols[i])
+	plot(lll, thecl[i]+dllensing+fact*cl150x150[2],lw=4, color=cols[i])
 legend(loc='upper right')
-savefig('cl_cmb.png')
+savefig('cl_cmb_big.png')
 

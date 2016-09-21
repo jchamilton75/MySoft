@@ -103,7 +103,7 @@ sampling = create_sweeping_pointings(
     
 ####### Full instrument
 instrument = QubicInstrument(filter_nu=150e9,
-                    detector_nep=4.7e-17*np.sqrt(len(sampling) * sampling.period / (365 * 86400)))
+                    detector_nep=1e-4*4.7e-17*np.sqrt(len(sampling) * sampling.period / (365 * 86400)))
 clf()
 plotinst(instrument)
 
@@ -121,7 +121,7 @@ nside = 64
 scene = QubicScene(nside, kind='IQU')
 
 def get_qubic_map(instrument, sampling, scene, input_maps, withplanck=True, covlim=0.1):
-    acq = QubicAcquisition(instrument, sampling, scene)
+    acq = QubicAcquisition(instrument, sampling, scene, photon_noise=False)
     C = acq.get_convolution_peak_operator()
     coverage = acq.get_coverage()
     observed = coverage > covlim * np.max(coverage)
@@ -133,6 +133,7 @@ def get_qubic_map(instrument, sampling, scene, input_maps, withplanck=True, covl
         y_noiseless = H(pack(x0_convolved))
         noise = acq.get_noise()
         y = y_noiseless + noise
+        print(std(noise))
         invntt = acq.get_invntt_operator()
         A = H.T * invntt * H
         b = (H.T * invntt)(y)
@@ -152,13 +153,22 @@ def get_qubic_map(instrument, sampling, scene, input_maps, withplanck=True, covl
         solution_fusion = pcg(A, b, disp=True, maxiter=1000, tol=1e-3)
         maps = solution_fusion['x']
         maps[~observed] = 0
+    x0_convolved[~observed,:]=0    
     return(maps, x0_convolved, observed)    
-    
+
 themap_0_Q, x0_convolved, observed = get_qubic_map(instEven, sampling, scene, x0, withplanck = False)
+
+clf()
+display(themap_0_Q,'Q 0',center=center, reso=3, lims=[200, 2,2], nlines =3, iplot=1)
+display(x0_convolved,'Init',center=center, reso=3, lims=[200, 2,2], nlines =3, iplot=4)
+display(themap_0_Q-x0_convolved,'Residuals',center=center, reso=3, lims=[200, 2,2], nlines =3, iplot=7)
+
+
 themap_1_Q, x0_convolved, obesrved = get_qubic_map(instOdd, sampling, scene, x0, withplanck = False)
 
 themap_0_QP, x0_convolved, observed = get_qubic_map(instEven, sampling, scene, x0)
 themap_1_QP, x0_convolved, observed = get_qubic_map(instOdd, sampling, scene, x0)
+x0_convolved[~observed,:]=0    
 
 clf()
 display(themap_0_Q,'Q 0',center=center, reso=3, lims=[200, 2,2], nlines =4, iplot=1)
@@ -171,15 +181,6 @@ display(themap_0_Q-x0_convolved,'Res Q 0',center=center, reso=3, lims=[2, 0.1,0.
 display(themap_1_Q-x0_convolved,'Res Q 1',center=center, reso=3, lims=[2, 0.1,0.1], nlines =4, iplot=4)
 display(themap_0_QP-x0_convolved,'Res QP 0',center=center, reso=3, lims=[2, 0.1,0.1], nlines =4, iplot=7)
 display(themap_1_QP-x0_convolved,'Res QP 1',center=center, reso=3, lims=[2, 0.1,0.1], nlines =4, iplot=10)
-
-
-
-### Questions
-# - how to have input map at 256 and reconstructed at 64 ?
-# - am I getting new QUBIC noise by calling twice acq_fusion.get_observation()
-#       if not: how to do it ? How do I get the same noise for QUBIC when using Planck ?
-
-
 
 #### EB Only
 mask=~observed
@@ -197,7 +198,7 @@ ellval=(ellmin+ellmax)/2
 binspec=pyquad.binspectrum(spectra,ellmin,ellmax)
 
 reload(qml)
-fwhmrad = instrument.synthbeam.peak.fwhm
+fwhmrad = instrument.synthbeam.peak150.fwhm
 ll=np.arange(int(np.max(ellbins))+1)
 bl=np.exp(-0.5*ll**2*(fwhmrad/2.35)**2)
 
@@ -234,7 +235,7 @@ xlim(0,np.max(ellmax)*1.2)
 plot(ell,E,lw=3)
 xlabel('$\ell$')
 ylabel('$\ell(\ell+1)C_\ell/(2\pi)$')
-#ylim(0,3)
+ylim(0,3)
 plot(ellval,specoutQ[2]*ellval*(ellval+1)/(2*np.pi), 'ro',label='QUBIC')
 plot(ellval,specoutQP[2]*ellval*(ellval+1)/(2*np.pi), 'go',label='QUBIC+Planck')
 plot(ellval,specout_o[2]*ellval*(ellval+1)/(2*np.pi), 'ko',label='Original')
@@ -247,7 +248,7 @@ ylabel('$\ell(\ell+1)C_\ell/(2\pi)$')
 plot(ellval,specoutQ[3]*ellval*(ellval+1)/(2*np.pi), 'ro')
 plot(ellval,specoutQP[3]*ellval*(ellval+1)/(2*np.pi), 'go')
 plot(ellval,specout_o[3]*ellval*(ellval+1)/(2*np.pi), 'ko')
-#ylim(0,0.03)
+ylim(0,0.03)
 
 
 clf()

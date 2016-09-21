@@ -19,16 +19,40 @@ angspeed = 1        # deg/sec
 delta_az = 30.      # deg
 angspeed_psi = 0.1  # deg/sec
 maxpsi = 45.        # deg
-nsweeps_el = 200
+nsweeps_el = 80
 duration = 24       # hours
-ts = 1.           # seconds
+ts = 1           # seconds
 np.random.seed(0)
 sky = read_map(PATH + 'syn256_pol.fits')
 
 center = equ2gal(racenter, deccenter)
 
+# get the sampling model for San Antonio de los Cobres
+sadlc = np.array([-24.18947, -66.472016])
+sampling = create_sweeping_pointings(
+        [racenter, deccenter], duration, ts, angspeed, delta_az, nsweeps_el,
+        angspeed_psi, maxpsi, latitude=sadlc[0], longitude=sadlc[1])
 
-# get the sampling model
+mask = sampling.elevation > 30
+sampling = sampling[mask]
+clf()
+plot(sampling.azimuth, sampling.elevation ,',')
+
+radec = sampling.equatorial
+ra = (( radec[:,0] + 720 + 180 ) % 360) - 180
+
+clf()
+scatter(ra, radec[:,1], c=sampling.elevation, marker=0, alpha=0.2)
+cb=colorbar()
+cb.set_label('Elevation [deg.]')
+xlabel('RA [deg.]')
+ylabel('DEC [deg.]')
+savefig('sweeps_radec_sac.png')
+
+
+
+
+# get the sampling model for Concordia
 sampling = create_sweeping_pointings(
         [racenter, deccenter], duration, ts, angspeed, delta_az, nsweeps_el,
         angspeed_psi, maxpsi)
@@ -44,6 +68,7 @@ cb.set_label('Elevation [deg.]')
 xlabel('RA [deg.]')
 ylabel('DEC [deg.]')
 savefig('sweeps_radec.png')
+
 
 clf()
 plot(sampling.azimuth, sampling.elevation ,',')

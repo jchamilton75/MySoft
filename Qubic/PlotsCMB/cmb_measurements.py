@@ -74,12 +74,12 @@ camblib = [ellcamblib, rcamblib, clcamblib]
 
 #### models
 def get_dl(rvalue, lmaxcamb=1000):
-    params = {'H0':H0,'omegab':Omegab,'omegac':Omegac,'omegak':0,'scalar_index':0.9624,
-         'reion__use_optical_depth':True,'reion__optical_depth':0.0925,
+    params = {'H0':H0,'omegab':Omegab,'omegac':Omegac,'omegak':0,'scalar_index':0.968,
+         'reion__use_optical_depth':True,'reion__optical_depth':0.066,
          'tensor_ratio':rvalue,'WantTensors':True,'scalar_amp':scalar_amp,'DoLensing':True}
     T,E,B,X = pycamb.camb(lmaxcamb+1+150,**params)
-    params_nl = {'H0':H0,'omegab':Omegab,'omegac':Omegac,'omegak':0,'scalar_index':0.9624,
-         'reion__use_optical_depth':True,'reion__optical_depth':0.0925,
+    params_nl = {'H0':H0,'omegab':Omegab,'omegac':Omegac,'omegak':0,'scalar_index':0.968,
+         'reion__use_optical_depth':True,'reion__optical_depth':0.066,
          'tensor_ratio':rvalue,'WantTensors':True,'scalar_amp':scalar_amp,'DoLensing':False}
     Tnl,Enl,Bnl,Xnl = pycamb.camb(lmaxcamb+1+150,**params_nl)
     lll = np.arange(1,lmaxcamb+1)
@@ -96,7 +96,7 @@ uplims = np.loadtxt('/Users/hamilton/CMB/Interfero/PlotsCMB/upperlimits.txt',
     dtype=[('name', 'S10'), ('lmin', float), ('lmax', float), ('updl', float)], skiprows=3)
 experiments = unique(uplims['name'])
 
-
+powc = 1
 col = plt.get_cmap('jet')(np.linspace(0, 1.0, len(experiments)))
 clf()
 yscale('log')
@@ -106,23 +106,27 @@ for exp in experiments:
     thedata = uplims[uplims['name']==exp]
     lcenters = (thedata['lmin']+thedata['lmax'])/2
     thexerr = (thedata['lmax']-thedata['lmin'])/2
-    errorbar(lcenters, thedata['updl'], xerr=thexerr,fmt=',', label=exp, color=col[i], lw=2)
+    conv_fact = lcenters**powc / (lcenters * (lcenters+1))
+    errorbar(lcenters, thedata['updl'] * conv_fact, xerr=thexerr,fmt=',', label=exp, color=col[i], lw=2)
     i=i+1
 
 dl_lensing = clth_0_1[3]-clth_0_1[7]
-plot(clth_0_1[0], dl_lensing, 'k--')
-plot(clth_0_1[0], clth_0_1[3],'b', label='r = 0.1')
-plot(clth_0_1[0], clth_0_1[3]-dl_lensing,'b:')
-plot(clth_0_01[0], clth_0_01[3],'r', label='r = 0.01')
-plot(clth_0_01[0], clth_0_01[3]-dl_lensing,'r:')
-legend(loc='upper left',fontsize=8)
+lth = clth_0_1[0]
+conv_fact = lth**powc / (lth * (lth+1))
+plot(lth, dl_lensing * conv_fact, 'k--')
+plot(lth, clth_0_1[3] * conv_fact,'b', label='r = 0.1')
+plot(lth, (clth_0_1[3]-dl_lensing) * conv_fact,'b:')
+plot(lth, clth_0_01[3] * conv_fact,'r', label='r = 0.01')
+plot(lth, (clth_0_01[3]-dl_lensing) * conv_fact,'r:')
+legend(loc='upper left',fontsize=8, numpoints=1, framealpha=0.5)
 xlabel('$\ell$')
-ylabel('$D_\ell^{BB} [\mu K^2]$')
-ylim(1e-4, 1e3)
+ylabel('$\ell C_\ell^{BB} / 2\pi \, [\mu K^2]$')
+ylim(5e-6, 1e-1)
 xlim(1,3000)
 savefig('upperlimits.png')
 
 ### Measurements
+powc = 1
 meas = np.loadtxt('/Users/hamilton/CMB/Interfero/PlotsCMB/detections.txt', 
     dtype=[('name', 'S30'), ('lmin', float), ('lcenter', float), ('lmax', float), ('BB', float), ('errBB', float)], skiprows=3)
 experiments = unique(meas['name'])
@@ -136,7 +140,10 @@ i=0
 for exp in experiments:
     thedata = meas[meas['name']==exp]
     lcenters = thedata['lcenter']
+    conv_fact = lcenters**powc / (lcenters * (lcenters+1))
     thexerr = (thedata['lmax']-thedata['lmin'])/2
+    thedata['errBB'] *= conv_fact
+    thedata['BB'] *= conv_fact
     ups = thedata['BB']<=0
     errorbar(lcenters[ups], np.abs(thedata['errBB'][ups])*2, xerr=thexerr[ups], yerr=np.abs(thedata['errBB'][ups])/2, fmt=',', color=col[i], lw=2, uplims = True)
     ok = thedata['BB']>0
@@ -144,17 +151,19 @@ for exp in experiments:
     i=i+1
 
 dl_lensing = clth_0_1[3]-clth_0_1[7]
-plot(clth_0_1[0], dl_lensing, 'k--', label='BB Lensing')
-plot(clth_0_1[0], clth_0_1[3],'b', label='r = 0.1')
-plot(clth_0_1[0], clth_0_1[3]-dl_lensing,'b:')
-plot(clth_0_01[0], clth_0_01[3],'r', label='r = 0.01')
-plot(clth_0_01[0], clth_0_01[3]-dl_lensing,'r:')
-legend(loc='upper left',fontsize=12)
+lth = clth_0_1[0]
+conv_fact = lth**powc / (lth * (lth+1))
+plot(clth_0_1[0], dl_lensing * conv_fact, 'k--', label='BB Lensing')
+plot(clth_0_1[0], clth_0_1[3] * conv_fact,'b', label='r = 0.1')
+plot(clth_0_1[0], (clth_0_1[3]-dl_lensing) * conv_fact,'b:')
+plot(clth_0_01[0], clth_0_01[3] * conv_fact,'r', label='r = 0.01')
+plot(clth_0_01[0], (clth_0_01[3]-dl_lensing) * conv_fact,'r:')
+legend(loc='upper left',fontsize=8, numpoints=1, framealpha=0.5)
 xlabel('$\ell$')
-ylabel('$D_\ell^{BB} [\mu K^2]$')
-ylim(1e-4, 1)
+ylabel('$\ell C_\ell^{BB} / 2\pi \, [\mu K^2]$')
+ylim(5e-6, 1e-3)
 xlim(1,3000)
-savefig('measurements.png')
+savefig('measurements2.png')
 
 
 

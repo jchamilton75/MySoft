@@ -43,7 +43,7 @@ def statstr2(thedata, percentiles=[0.25, 0.5, 0.75]):
     vals = []
     for perc in percentiles:
         vals.append(sd[perc*len(sd)])
-        truc = truc + '{0:.3f} ({1:.0f}%) - '.format(sd[perc*len(sd)], perc*100)
+        truc = truc + '{0:.1f} ({1:.0f}%) - '.format(sd[perc*len(sd)], perc*100)
     return truc[0:-3], vals
 
 
@@ -60,6 +60,7 @@ jdcal.jd2gcal(init, jd0[-1])
 jdstartyear = np.sum(jdcal.gcal2jd(2011,1,1))
 jdsince0 = init + ts0/3600/24 - jdstartyear
 
+
 clf()
 plot(jdsince0, WS_ms_Max, 'r,')
 plot(jdsince0, WS_ms_Avg)
@@ -67,24 +68,44 @@ plot(jdsince0, WS_ms_Std)
 xlabel('JD since 2011')
 ylabel('Wind Speed $[m/s]$')
 
-
 #### comparer avec https://science.nrao.edu/facilities/alma/aboutALMA/Technology/ALMA_Memo_Series/alma497/memo497.pdf
 #### Figure 3.1
 bla=hist(WS_ms_Avg, range=[0,30], bins=300, cumulative=True,normed=1, alpha=0.1)
 clf()
-hist(WS_ms_Avg, range=[0,30], bins=100, normed=True)
-plot(bla[1][0:-1], bla[0]*0.12,'r', label = statstr2(WS_ms_Avg)[0])
+hist(WS_ms_Avg, range=[0,30], bins=50, normed=False, weights=WS_ms_Avg*0+1e-5, color='red')
+plot(bla[1][0:-1], bla[0],'k', lw=3, label = statstr2(WS_ms_Avg)[0])
 legend()
-xlabel('1 min Averaged Wind Speed [m/s]')
-savefig('wind-chorillos_avg1min.png')
+xlim(0,30)
+grid()
+xlabel('Wind Speed [m/s]')
+title('Average over 1 minute')
+savefig('wind-chorillos_avg1min_new.pdf')
 
 bla=hist(WS_ms_Max, range=[0,30], bins=300, cumulative=True,normed=1, alpha=0.1)
 clf()
-hist(WS_ms_Max, range=[0,30], bins=30, normed=True)
-plot(bla[1][0:-1], bla[0]*0.12,'r', label = statstr2(WS_ms_Max)[0])
+hist(WS_ms_Max, range=[0,30], bins=50, normed=False, weights=WS_ms_Max*0+1.2e-5, color='red')
+plot(bla[1][0:-1], bla[0],'k', lw=3, label = statstr2(WS_ms_Max)[0])
 legend()
-xlabel('Max Wind Speed [m/s]')
-savefig('wind-chorillos_max.png')
+xlabel('Wind Speed [m/s]')
+title('Maximum measured in 1 minute')
+grid()
+savefig('wind-chorillos_max_new.pdf')
+
+
+x = WS_ms_Avg * cos(-pi/2-np.radians(WindDir_D1_WVT))
+y = WS_ms_Avg * sin(-pi/2-np.radians(WindDir_D1_WVT))
+mask = (x==0) & (y==0)
+bla = hist2d(x[~mask],y[~mask], bins=300, range=[[-15,15],[-5,5]],normed=True)
+xlabel('m/sec ')
+ylabel('m/sec ')
+
+
+
+
+
+
+
+
 
 
 
@@ -101,6 +122,9 @@ fpos = freq > 0
 plot(freq[fpos], filt.gaussian_filter1d(np.abs(ftws[fpos])**2, 1000))
 xlabel('Frequency $[Hz]$')
 ylabel('Wind Speed Power Spectrum')
+
+plot(freq[fpos], 0.5/freq[fpos]**2)
+plot(freq[fpos], 2500/freq[fpos]**1)
 
 
 
@@ -193,14 +217,18 @@ plot(month, alleqtau, 'k', lw=3)
 legend()
 #savefig('tau_chorillos.png')
 
-### Now atmospheric model from ATM done by Andrea Tartari 
+for i in xrange(len(month)):
+    print('{0:} {1:5.3f} {2:5.3f} {3:5.3f} {4:5.3f}'.format(month[i], allvals[0,i], allvals[1,i], allvals[2,i], alleqtau[i]))
+
+
+### Now atmospheric model from AM done by Andrea Tartari 
 fghz, tau, tb = np.loadtxt('/Users/hamilton/Qubic/Sites/FromAndrea/chaj.out').T
 clf()
 yscale('log')
 plot(fghz, tau)
 xlabel('Freq [GHz]')
 ylabel('Opacity')
-title('From ATM with Chajnantor configuration')
+title('From AM with Chajnantor configuration')
 plot([150,150], [1e-5, 1e5], 'k:')
 plot([210,210], [1e-5, 1e5], 'k:')
 plot([220,220], [1e-5, 1e5], 'k:')
@@ -210,19 +238,24 @@ ylim(1e-3, 1e2)
 conv_210_150 = np.interp(150, fghz, tau) / np.interp(210, fghz, tau)
 conv_210_220 = np.interp(220, fghz, tau) / np.interp(210, fghz, tau)
 
+
+
 clf()
 xlim(0,13)
-title('Chorillos - 25, 50 and 75% percentiles')
+title('Alto Chorillos - 25, 50 and 75% percentiles')
 xlabel('Month')
-ylabel(r'$\tau(\nu)$ (extrapolated from 210 GHz)')
+ylabel('Atmospheric Opacity (from 210 GHz data)')
 fill_between(month, allvals[0,:] * conv_210_220, y2=allvals[2,:] * conv_210_220, color='b', alpha=0.2)
-plot(month, allvals[1,:] * conv_210_220, 'b', label ='220 GHz')
+plot(month, allvals[1,:] * conv_210_220, 'b', label ='220 GHz',lw=3)
 #plot(month, alleqtau * conv_210_220, 'b', lw=3, label ='220 GHz')
 fill_between(month, allvals[0,:] * conv_210_150, y2=allvals[2,:] * conv_210_150, color='r', alpha=0.2)
-plot(month, allvals[1,:] * conv_210_150, 'r', label = '150 GHz')
+plot(month, allvals[1,:] * conv_210_150, 'r', label = '150 GHz',lw=3)
 #plot(month, alleqtau * conv_210_150, 'r', lw=3, label ='220 GHz')
-ylim(0,0.3)
+ylim(0,0.6)
+xlim(1,12)
 legend()
+grid()
+savefig('tau_qubic_freqs.pdf')
 
 
 clf()
@@ -285,28 +318,82 @@ jdstartyear = np.sum(jdcal.gcal2jd(2011,1,1))
 jdsince1 = init + ts1/3600/24 - jdstartyear
 Tchorillo = AirTC_Avg + 273.15
 clf()
-plot(jdsince1, Tchorillo)
-xlabel('JD since 2011')
-ylabel('Air Temperature $[K]$')
+plot(jdsince1, Tchorillo,'r,',alpha=0.1)
+xlabel('Julian Days (start 01/01/2011)')
+ylabel('Atmosphere Temperature in Kelvins')
 
 mm = np.zeros(len(jd1))
+ff = np.zeros(len(jd1))
 i=0
 for jj in jd1:
-    mm[i] = jdcal.jd2gcal(init, jj)[1]
+    bla = jdcal.jd2gcal(init, jj)
+    mm[i] = bla[1]
+    ff[i] = bla[3]
     i+=1
 
 TAvchorillo = np.zeros(12)
+STAvchorillo = np.zeros(12)
 for i in np.arange(12):
-    TAvchorillo[i] = np.mean(Tchorillo[mm==(i+1)])
+    TAvchorillo[i] = np.median(Tchorillo[mm==(i+1)])
+    STAvchorillo[i] = np.std(Tchorillo[mm==(i+1)])
+
+TAvchorillo_day = np.zeros(24)
+STAvchorillo_day = np.zeros(24)
+for i in np.arange(24):
+    TAvchorillo_day[i] = np.median(Tchorillo[np.floor(ff*24)==i])
+    STAvchorillo_day[i] = np.std(Tchorillo[np.floor(ff*24)==i])
 
 clf()
-plot(TAvchorillo)
+plot(TAvchorillo_day)
 
 
+
+clf()
+plot(jdsince1, Tchorillo-273.15,'r.', alpha=0.05)
+xlabel('Julian Days (start 01/01/2011)')
+ylabel('Atmosphere Temperature in Kelvins')
+legend(numpoints=1)
+savefig('temperature_sadc_new.pdf')
+
+clf()
+#errorbar(np.arange(12)+1,TAvchorillo-273.15, yerr=STAvchorillo, fmt='bo',xerr=0.5, label='Median over 2 years',lw=3)
+fill_between(np.arange(12)+1,TAvchorillo-273.15+STAvchorillo, y2=TAvchorillo-273.15-STAvchorillo, alpha=0.3)
+plot(np.arange(12)+1,TAvchorillo-273.15, 'b', label='Median over 2 years',lw=3)
+grid()
+xlim(1.,12.)
+ylim(-15,15)
+xlabel('Month')
+ylabel('Atmospheric temperature $[K]$')
+legend(numpoints=1)
+savefig('temperature_month_sadc_new.pdf')
+
+clf()
+#errorbar(np.arange(24),TAvchorillo_day-273.15, yerr=STAvchorillo_day, fmt='bo',xerr=0.5, label='Median over 2 years', lw=3)
+fill_between(np.arange(24),TAvchorillo_day-273.15+STAvchorillo_day, y2=TAvchorillo_day-273.15-STAvchorillo_day, alpha=0.3)
+plot(np.arange(24),TAvchorillo_day-273.15, 'b', label='Median over 2 years',lw=3)
+grid()
+xlim(0,23)
+xlabel('Hour')
+ylabel('Atmospheric Temperature $[K]$')
+legend(numpoints=1)
+savefig('temperature_hour_sadc_new.pdf')
 
 
 ### Now one can calculate NETs
 elevation_obs = 50.
+
+
+
+### data for Chajnantor at 350microns = 857 GHz : https://www.cfa.harvard.edu/~aas/oldtenmeter/opacity.htm
+tau_857_chaj = np.array([3.8, 2.7, 2.6, 2.9, 2.65, 2.45, 2.0, 1.5, 1.8, 1.9, np.nan, np.nan])
+#### conversion to 150 and 220 from AM Chajnantor by A. Tartari
+conv_857_150 = 2.9e-2 / 1.39
+conv_857_220 = 5.1e-2 / 1.39
+conv_857_210 = 5.1e-2 / 1.39
+plot(month, tau_857_chaj * conv_857_150, 'r')
+plot(month, tau_857_chaj * conv_857_220, 'b')
+
+
 
 ### tau plot again
 clf()
@@ -319,6 +406,7 @@ plot(month, tau_dc_220, 'b--', lw=3, label ='Concordia - 220 GHz')
 plot(month, tau_dc_150, 'r--', lw=3, label ='Concordia - 150 GHz')
 ylim(0,0.3)
 legend()
+
 
 ### First get emissivities from tau
 em150_dc = 1-np.exp(-tau_dc_150/np.cos(np.radians(90-elevation_obs)))
@@ -336,6 +424,65 @@ plot(month, em150_dc, 'r--', lw=3, label ='Concordia - 150 GHz')
 ylim(0,0.3)
 legend()
 #savefig('atm_emissivity.png')
+
+
+em210_ch = 1-np.exp(-alleqtau/np.cos(np.radians(90-elevation_obs)))
+trans150_dc = 1.-em150_dc
+trans220_dc = 1.-em220_dc
+trans150_ch = 1.-em150_ch
+trans220_ch = 1.-em150_ch
+
+
+
+
+clf()
+xlim(0,13)
+xlabel('Month')
+ylabel(r'Atmospheric Emissivity')
+plot(month, em220_ch, 'b', lw=3, label ='Chorillos - 220 GHz')
+plot(month, em150_ch, 'r', lw=3, label ='Chorillos - 150 GHz')
+ylim(0,0.3)
+legend()
+grid()
+#savefig('atm_emissivity-cho.png')
+
+clf()
+xlim(0,13)
+xlabel('Month')
+ylabel(r'Atmospheric Emissivity')
+plot(month, em220_ch, 'b', lw=3, label ='Chorillos - 220 GHz')
+plot(month, em150_ch, 'r', lw=3, label ='Chorillos - 150 GHz')
+plot(month, em220_chaj, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
+plot(month, em150_chaj, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
+ylim(0,0.3)
+legend()
+grid()
+#savefig('atm_emissivity-cho-chaj.png')
+
+clf()
+xlim(0,13)
+xlabel('Month')
+ylabel(r'Atmospheric Brightness Temperature (K)')
+plot(month, em220_ch * TAvchorillo, 'b', lw=3, label ='Chorillos - 220 GHz')
+plot(month, em150_ch * TAvchorillo, 'r', lw=3, label ='Chorillos - 150 GHz')
+ylim(0,110)
+legend()
+grid()
+#savefig('atm_brightness-cho.png')
+
+clf()
+xlim(0,13)
+xlabel('Month')
+ylabel(r'Atmospheric Brightness Temperature (K)')
+plot(month, em220_ch * TAvchorillo, 'b', lw=3, label ='Chorillos - 220 GHz')
+plot(month, em150_ch * TAvchorillo, 'r', lw=3, label ='Chorillos - 150 GHz')
+plot(month, em220_chaj * TAvchorillo, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
+plot(month, em150_chaj * TAvchorillo, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
+ylim(0,110)
+legend()
+grid()
+#savefig('atm_brightnesscho-chaj.png')
+
 
 
 from Sites import loading
@@ -421,161 +568,25 @@ print((final_net150_ch/final_net150_dc)**2, (final_net220_ch/final_net220_dc)**2
 
 
 
-#### now read simulations made with these numbers
-####### Chains for ANR 2015 simulations
-def upperlimit(chain,key,level=0.95):
-	sorteddata = np.sort(chain[key])
-	return sorteddata[level*len(sorteddata)]
 
-from McMc import mcmc
-from Sensitivity import data4mcmc
-rep = '/Users/hamilton/Qubic/Sites/SimsComparisonSites/'
+#### Checking things for Beatriz
 
-all_ul_B = []
-all_ul_D = []
-all_ul_nofg = []
-
-for localisation in ['atac', 'conc']:
-    #for eff in ['03', '05', '1']:
-    for eff in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '1']:
-        site = localisation + '_' + eff + '_' 
-        config = ''
-        #site = 'atac_05_'
-        chain_B_r_dl_b = data4mcmc.readchains(rep+site+'instrumentB_r_dl_b.db')
-        chain_D_r_dl_b = data4mcmc.readchains(rep+site+'instrumentD_r_dl_b.db')
-        chain_nofg_r = data4mcmc.readchains(rep+site+'instrumentNofg_r.db')
-
-        truer = 0.
-        truebeta = 1.59
-        truedl = 13.4 * 0.45
-        truealpha = -2.42
-        trueT = 19.6
-        level =0.95
-        cl = int(level*100)
-
-        ########### r dl and beta
-        sm=4
-        histn=4
-        alpha =0.5
-
-        nbins=100
-        from scipy.ndimage import gaussian_filter1d
-        bla = np.histogram(chain_nofg_r['r'],bins=nbins,normed=True)
-        xhist=(bla[1][0:nbins]+bla[1][1:nbins+1])/2
-        ss=np.std(chain_nofg_r['r'])
-        yhist=gaussian_filter1d(bla[0],ss/histn/(xhist[1]-xhist[0]), mode='nearest')
-        plot(xhist,yhist/max(yhist))
-
-        thelimits = [[truebeta*0.85, truebeta*1.15],[0,0.08]]
-
-        bla=mcmc.matrixplot(chain_B_r_dl_b,['betadust','r'], 'green', sm, 
-            limits=thelimits, alpha=alpha,histn=histn, truevals = [truebeta, truer])
-
-        ### Au final
-        clf()
-        #c=mcmc.matrixplot(chain_C_r_dl_b,['betadust','r'], 'black', sm, limits=[[truebeta*0.95, truebeta*1.05],[0,0.05]], alpha=alpha,histn=histn, truevals = [truebeta, truer])
-        b=mcmc.matrixplot(chain_B_r_dl_b,['betadust','r'], 'blue', sm, limits=thelimits, 
-            alpha=alpha,histn=histn, truevals = [truebeta, truer])
-        d=mcmc.matrixplot(chain_D_r_dl_b,['betadust','r'], 'red', sm, limits=thelimits, 
-            alpha=alpha,histn=histn, truevals = [truebeta, truer])
-        subplot(2,2,4)
-        noFG = plot(xhist,yhist/max(yhist), color='green', label='toto')
-        subplot(2,2,2)
-        #legC = '150x2+353 : r < {0:5.2f} (95% CL)'.format(upperlimit(chain_C_r_dl_b,'r'))
-        ul_B = upperlimit(chain_B_r_dl_b,'r')
-        legB = '150+220 : r < {0:5.3f} (95% CL)'.format(ul_B)
-        ul_D = upperlimit(chain_D_r_dl_b,'r')
-        legD = '150+220+353: r < {0:5.3f} (95% CL)'.format(ul_D)
-        ul_nofg = upperlimit(chain_nofg_r,'r')
-        legnoFG = 'No Foregrounds: r < {0:5.3f} (95% CL)'.format(ul_nofg)
-        legend([b, d, bla],[legB, legD, legnoFG], frameon=False, title='QUBIC 2 years '+config+site)
-        savefig(site+'.png')
-        
-        all_ul_B. append(ul_B)
-        all_ul_D. append(ul_D)
-        all_ul_nofg. append(ul_nofg)
+names = ['BattV_Min', 'AirTC_Avg', 'AirTC_Std', 'RH_Avg', 'RH_Std', 'SlrkW_Avg', 'SlrkW_Std', 'ETos', 'Rso', 
+                'WS_ms_Avg', 'WS_ms_Std', 'WS_ms_Max', 'WS_ms_S_WVT', 'WindDir_D1_WVT', 'WindDir_SD1_WVT']
+data = [BattV_Min, AirTC_Avg, AirTC_Std, RH_Avg, RH_Std, SlrkW_Avg, SlrkW_Std, ETos, Rso, 
+                WS_ms_Avg, WS_ms_Std, WS_ms_Max, WS_ms_S_WVT, WindDir_D1_WVT, WindDir_SD1_WVT]
 
 
-all_ul_B = np.reshape(all_ul_B, (2,len(all_ul_B)/2))
-all_ul_D = np.reshape(all_ul_D, (2,len(all_ul_D)/2))
-all_ul_nofg = np.reshape(all_ul_nofg, (2,len(all_ul_nofg)/2))
+for i in xrange(len(names)):
+    nn = names[i]
+    dd = data[i]
+    dd = dd[isfinite(dd)]
+    aa = statstr2(dd)[1]
+    print('{0:15} | {1:6.2f} | {2:6.2f} | {3:6.2f} | {4:6.2f} | {5:6.2f} | {6:6.2f} | {7:6.2f} '.format(nn, np.mean(dd),
+            np.std(dd), np.min(dd), aa[0], aa[1], aa[2], np.max(dd)))
 
-#eff = np.array([0.3,0.5, 1.])
-eff = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.])
-alleff=linspace(0.1, 1, 100)
-clf()
-grid()
-xlim(0.1,1.)
-ylim(0,0.05)
-xlabel('Observation Efficiency (%)')
-ylabel('95% Upper-limit on $r$ (2 years)')
-title('QUBIC 150 + 220 GHz + Planck 353 GHz')
-plot(eff, eff*1000, 'r', lw=3)
-plot(eff, eff*1000, 'r-', lw=3, label = 'Concordia')
-plot(eff, eff*1000, 'r--', lw=3, label = 'Chorillos')
-plot(eff, all_ul_D[0,:], 'r--', lw=3)
-plot(eff, all_ul_D[1,:], 'r-', lw=3)
-legend()
-#savefig('sensitivity_efficiency.png')
 
-#### Concordia
-badmonths = 2.
-hours_below = 0.
-cycle_he7 = 4.
-hours_selfcalib = np.array([0., 6., 12.])
-badhours = np.max([hours_below, cycle_he7])
-badhours_remain = badhours-cycle_he7
-hours_selfcalib_cost = np.clip(hours_selfcalib - badhours_remain, 0, 24)
-hours_obsfield = 24 - badhours - hours_selfcalib_cost
-hours_ratio = hours_obsfield/24
-fracmax_concordia = (12-badmonths)*1./12 * hours_ratio
 
-#### Chorillos
-badmonths = 3.
-hours_below = 0.6*24
-cycle_he7 = 4.
-hours_selfcalib = np.array([0., 6., 12.])
-badhours = np.max([hours_below, cycle_he7])
-badhours_remain = badhours-cycle_he7
-hours_selfcalib_cost = np.clip(hours_selfcalib - badhours_remain, 0, 24)
-hours_obsfield = 24 - badhours - hours_selfcalib_cost
-hours_ratio = hours_obsfield/24
-fracmax_chorillos = (12-badmonths)*1./12 * hours_ratio
-
-#eff = np.array([0.3,0.5, 1.])
-eff = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.])
-alleff=linspace(0.1, 1, 100)
-clf()
-xlabel('Observation Efficiency (%)')
-ylabel('95% Upper-limit on $r$ (2 years)')
-title('QUBIC 150 + 220 GHz + Planck 353 GHz')
-xlim(0.1,1.)
-ylim(0,0.05)
-plot(eff, all_ul_D[0,:], 'b-', lw=3, label = 'Chorillos')
-plot(eff, all_ul_D[1,:], 'r-', lw=3, label = 'Concordia')
-
-fill_between([fracmax_chorillos[0],1.], [0,0], y2=[0.1,0.1], alpha=0.2, color='blue', hatch='/', label='Excluded')
-fill_between([fracmax_concordia[0],1.], [0,0], y2=[0.1,0.1], alpha=0.2, color='red',hatch='//', label='Excluded')
-
-ls = [':','--','-.']
-for i in xrange(len(ls)): plot([100,100],[100,100],ls=ls[i], label = 'Self-Calib = {0:.0f}h'.format(hours_selfcalib[i]), color='k')
-
-for i in xrange(len(fracmax_concordia)):
-    f = fracmax_concordia[i]
-    plot([f, f], [0,1], 'r', ls=ls[i])
-    plot([0,1], np.array([0,0])+np.interp(f, eff, all_ul_D[1,:]), 'r', ls=ls[i])
-    plot(f, np.interp(f, eff, all_ul_D[1,:]),'ro',ms=10)
-    #annotate('Self-Calib = {0:.0f}h'.format(np.int(hours_selfcalib[i])), xy=(0.11, np.interp(f, eff, all_ul_D[1,:])+0.0003))
-
-for i in xrange(len(fracmax_chorillos)):
-    f = fracmax_chorillos[i]
-    plot([f, f], [0,1], 'b', ls=ls[i])
-    plot([0,1], np.array([0,0])+np.interp(f, eff, all_ul_D[0,:]), 'b',ls=ls[i])
-    plot(f, np.interp(f, eff, all_ul_D[0,:]),'bo',ms=10)
-    #annotate('Self-Calib = {0:.0f}h'.format(np.int(hours_selfcalib[i])), xy=(0.11, np.interp(f, eff, all_ul_D[0,:])+0.0003))
-legend()
-
-#savefig('sensitivity_efficiency.png')
 
 
 

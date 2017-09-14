@@ -78,7 +78,7 @@ ds_dcb=0
 
 
 ### case first pixels
-nbpixok=899
+nbpixok=1000
 mask=(np.arange(12*nside**2) >= nbpixok)
 maskok=~mask
 
@@ -87,9 +87,9 @@ maskok=~mask
 ip=np.arange(12*nside**2)
 ipok=ip[~mask]
 
-#ellbins=[0,50,100,150,200,250,300,350,3*nside]
-#ellbins = [0,50,65, 80,95,110,125, 140, 155, 170, 185,200]
-ellbins = [0,50,75,100,125,150,175,200]
+#ellbins=[0,50,100,150,200,3*nside]
+#ellbins = [0,50,70, 90,110,130,150, 170, 190, 210,4*nside]
+ellbins = [0,50,75,100,125,150,175,200,225]
 nbins=len(ellbins)-1
 ellmin=np.array(ellbins[0:nbins])
 ellmax=np.array(ellbins[1:nbins+1])-1
@@ -108,54 +108,25 @@ ds_dcb=qml.compute_ds_dcb_parpix(ellbins,nside,ipok,bl,polar=True,temp=False,npr
 fin = time.time()
 print(fin-init)
 
-init1 = time.time()
-ds_dcb_new=qml.compute_ds_dcb_parpix_direct(ellbins,nside,ipok,bl,polar=True,temp=False,nprocs=8)
-fin1 = time.time()
-print(fin1-init1)
+# init1 = time.time()
+# ds_dcb_new=qml.compute_ds_dcb_parpix_direct(ellbins,nside,ipok,bl,polar=True,temp=False,nprocs=8)
+# fin1 = time.time()
+# print(fin1-init1)
 
-clf()
-ider=1
-for i in np.arange(len(ellbins)-1):
-    subplot(3,3,i+1)
-    imshow(ds_dcb[ider,i,:,:]-ds_dcb_new[ider,i,:,:],interpolation='nearest')
-    colorbar()
+# clf()
+# ider=1
+# for i in np.arange(len(ellbins)-1):
+#     subplot(3,3,i+1)
+#     imshow(ds_dcb[ider,i,:,:]-ds_dcb_new[ider,i,:,:],interpolation='nearest')
+#     colorbar()
 
-np.min(ds_dcb-ds_dcb_new)
-np.max(ds_dcb-ds_dcb_new)
-
-#### tests:
-## temperature only
-### case first pixels
-nbpixok=100
-mask=(np.arange(12*nside**2) >= nbpixok)
-maskok=~mask
-ip=np.arange(12*nside**2)
-ipok=ip[~mask]
-ellbins = [0,50,75,100,125,150,175,200]
-nbins=len(ellbins)-1
-ellmin=np.array(ellbins[0:nbins])
-ellmax=np.array(ellbins[1:nbins+1])-1
-ellval=(ellmin+ellmax)/2
-binspec=pyquad.binspectrum(spectra,ellmin,ellmax)
-reload(qml)
-ll=np.arange(int(np.max(ellbins))+1)
-bl=np.exp(-0.5*ll**2*(fwhmrad/2.35)**2)
-ds_dcb=qml.compute_ds_dcb_parpix(ellbins,nside,ipok,bl,polar=False,temp=True,nprocs=8)
-ds_dcb_new=qml.compute_ds_dcb_parpix_direct(ellbins,nside,ipok,bl,polar=False,temp=True,nprocs=1)
-
-clf()
-for i in np.arange(len(ellbins)-1):
-    subplot(3,3,i+1)
-    imshow(ds_dcb[0,i,:,:]-ds_dcb_new[0,i,:,:],interpolation='nearest')
-    colorbar()
+# np.min(ds_dcb-ds_dcb_new)
+# np.max(ds_dcb-ds_dcb_new)
 
 
 
 
-
-
-
-signoise=0.0
+signoise=0.1
 mapi,mapq,mapu=hp.synfast(spectra[1:],nside,fwhm=fwhmrad,pixwin=True,new=True)
 themapi=mapi.copy()
 themapi[mask]=0
@@ -194,15 +165,29 @@ themaps2=[themapq2,themapu2]
 #hp.gnomview(themaps2[0],rot=[0,90],reso=10,title='Q')
 #hp.gnomview(themaps2[1],rot=[0,90],reso=10,title='U')
 
-hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapq1_ok.fits', themapq)
-hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapu1_ok.fits', themapu)
-hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapq2_ok.fits', themapq2)
-hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapu2_ok.fits', themapu2)
+#hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapq1_ok.fits', themapq)
+#hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapu1_ok.fits', themapu)
+#hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapq2_ok.fits', themapq2)
+#hp.write_map('/Users/hamilton/CMB/Interfero/Quad/mapu2_ok.fits', themapu2)
 
 
-covmap=np.identity(len(ipok)*len(themaps))*signoise**2*0
+
+# covmap=np.identity(len(ipok)*len(themaps))*signoise**2
+# guess=[0,binspec[:,1],binspec[:,2],binspec[:,3],0]
+# specout,error,invfisher,lk,num,ds_dcb=qml.qml(themaps,mask,covmap,ellbins,fwhmrad,guess,ds_dcb,spectra,
+# 	cholesky=True,temp=False,polar=True,plot=True,itmax=20)
+
+
+ion()
+covmap=np.identity(len(ipok)*len(themaps))*signoise**2
 guess=[0,binspec[:,1],binspec[:,2],binspec[:,3],0]
-specout,error,invfisher,ds_dcb=qml.qml_cross_noiter(themaps, themaps2,mask,covmap,ellbins,fwhmrad,guess,
+specout,error,invfisher,lk, num,ds_dcb, conv=qml.qml_cross(themaps, themaps,mask,covmap,ellbins,fwhmrad,guess,
+    ds_dcb,spectra,cholesky=False,temp=False,polar=True,plot=True)
+
+ion()
+covmap=np.identity(len(ipok)*len(themaps))*signoise**2
+guess=[0,binspec[:,1],binspec[:,2],binspec[:,3],0]
+specout,error,invfisher,ds_dcb=qml.qml_cross(themaps, themaps2,mask,covmap,ellbins,fwhmrad,guess,
     ds_dcb,spectra,cholesky=False,temp=False,polar=True,plot=True)
 
 

@@ -17,7 +17,7 @@ racenter = 0.0      # deg
 deccenter = -57.0   # deg
 angspeed = 1        # deg/sec
 delta_az = 30.      # deg
-angspeed_psi = 0.1  # deg/sec
+angspeed_psi = 0.   # deg/sec
 maxpsi = 45.        # deg
 nsweeps_el = 80
 duration = 24       # hours
@@ -89,7 +89,8 @@ sampling = create_sweeping_pointings(
 
 
 detector_nep = 4.7e-17*np.sqrt(len(sampling) * sampling.period / (365 * 86400))
-acq_qubic = QubicAcquisition(150, sampling[np.abs(sampling.elevation-50) < 20], nside=nside,
+acq_qubic = QubicAcquisition(150, sampling[np.abs(sampling.elevation-50) < 20], 
+    #nside=nside,
                              detector_nep=detector_nep)
                             
 coverage_map = acq_qubic.get_coverage()

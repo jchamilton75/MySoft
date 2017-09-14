@@ -17,9 +17,10 @@ all_ul_B = []
 all_ul_D = []
 all_ul_nofg = []
 
-for localisation in ['atac', 'conc']:
-    #for eff in ['03']:
-    for eff in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '1']:
+#for localisation in ['atac', 'conc']:
+for localisation in ['atac']:
+    for eff in ['03']:
+    #for eff in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '1']:
         site = localisation + '_' + eff + '_' 
         config = ''
         #site = 'atac_05_'
@@ -72,12 +73,98 @@ for localisation in ['atac', 'conc']:
         legnoFG = 'No Foregrounds: $\sigma_r$ = {0:5.3f}'.format(ul_nofg)
         legend([b, d, bla],[legB, legD, legnoFG], frameon=False, title='QUBIC 2 years '+config+site, fontsize=12)
         #legend([b, d, bla],[legB, legD, legnoFG], frameon=False, title='QUBIC 2 years - Concordia - $\epsilon$=0.3')
-        savefig(site+'.pdf')
+        #savefig(site+'.pdf')
         draw()
         
         all_ul_B. append(ul_B)
         all_ul_D. append(ul_D)
         all_ul_nofg. append(ul_nofg)
+
+
+
+
+
+
+
+#for localisation in ['atac', 'conc']:
+for localisation in ['atac']:
+    for eff in ['03']:
+    #for eff in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '1']:
+        site = localisation + '_' + eff + '_' 
+        config = ''
+        #site = 'atac_05_'
+        chain_B_r_dl_b = data4mcmc.readchains(rep+site+'instrumentB_r_dl_b.db')
+        chain_D_r_dl_b = data4mcmc.readchains(rep+site+'instrumentD_r_dl_b.db')
+        chain_nofg_r = data4mcmc.readchains(rep+site+'instrumentNofg_r.db')
+
+        truer = 0.
+        truebeta = 1.59
+        truedl = 13.4 * 0.45
+        truealpha = -2.42
+        trueT = 19.6
+        level =0.95
+        cl = int(level*100)
+
+        ########### r dl and beta
+        sm=4
+        histn=100
+        alpha =0.5
+
+        nbins=100
+        from scipy.ndimage import gaussian_filter1d
+        bla = np.histogram(chain_nofg_r['r'],bins=nbins,normed=True)
+        xhist=(bla[1][0:nbins]+bla[1][1:nbins+1])/2
+        ss=np.std(chain_nofg_r['r'])
+        yhist=gaussian_filter1d(bla[0],20*ss/histn/(xhist[1]-xhist[0]), mode='nearest')
+        plot(xhist,yhist/max(yhist))
+
+        thelimits = [[truebeta*0.98, truebeta*1.05],[0,0.03]]
+
+        bla=mcmc.matrixplot(chain_B_r_dl_b,['betadust','r'], 'green', sm, 
+            limits=thelimits, alpha=alpha,nbins=histn, leg=False)#, truevals = [truebeta, truer])
+
+        ### Au final
+        clf()
+        #c=mcmc.matrixplot(chain_C_r_dl_b,['betadust','r'], 'black', sm, limits=[[truebeta*0.95, truebeta*1.05],[0,0.05]], alpha=alpha,histn=histn, truevals = [truebeta, truer])
+        #b=mcmc.matrixplot(chain_B_r_dl_b,['betadust','r'], 'blue', sm, limits=thelimits, 
+        #    alpha=alpha,nbins=histn, linestyle=':')#, truevals = [truebeta, truer])
+        d=mcmc.matrixplot(chain_D_r_dl_b,['betadust','r'], 'red', sm, limits=thelimits, 
+            alpha=alpha,nbins=histn, linestyle='-', leg=False)#, truevals = [truebeta, truer])
+        subplot(2,2,4)
+        #subplot(2,2,2)
+        #legC = '150x2+353 : r < {0:5.2f} (95% CL)'.format(upperlimit(chain_C_r_dl_b,'r'))
+        #ul_B = upperlimit(chain_B_r_dl_b,'r', level =0.68)
+        #legB = '150+220 : $\sigma_r$ = {0:5.3f}'.format(ul_B)
+        ul_D = upperlimit(chain_D_r_dl_b,'r', level =0.68)
+        legD = '150+220+353: $\sigma_r$ = {0:5.3f}'.format(ul_D)
+        ul_nofg = upperlimit(chain_nofg_r,'r', level =0.68)
+        legnoFG = 'No Foregrounds: $\sigma_r$ = {0:5.3f}'.format(ul_nofg)
+        dd=plot([-1,-1],[-1,-1], color='red', label=legD, lw=2)
+        ee=plot(xhist,yhist/max(yhist), color='green', label=legnoFG, linestyle='--', lw=2)
+        legend(frameon=False, title='QUBIC 2 years \n Argentina, 30% efficiency\n ', fontsize=10)
+        #legend([d, noFG],[legD, legnoFG], frameon=False, title='QUBIC 2 years \n Argentina, 30% efficiency\n ', fontsize=12)
+        #legend([b, d, bla],[legB, legD, legnoFG], frameon=False, title='QUBIC 2 years '+config+site, fontsize=12)
+        #legend([b, d, bla],[legB, legD, legnoFG], frameon=False, title='QUBIC 2 years - Concordia - $\epsilon$=0.3')
+        #savefig(site+'.pdf')
+        draw()
+
+savefig('newplot_argentina.pdf')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 all_ul_B = np.reshape(all_ul_B, (2,len(all_ul_B)/2))

@@ -1399,6 +1399,7 @@ def qml(maps,mask,covmap,ellbins,fwhmrad,guess,ds_dcb,spectra,itmax=20,plot=Fals
             mp.ylabel('Likelihood')
             mp.title(message)
             mp.draw()
+            mp.pause(0.05)
         if num==itmax-1:
             convergence=-1
         if np.max(np.abs(conv)) <= 0.01:
@@ -1582,7 +1583,10 @@ def qml_cross(maps,maps2,mask,covmap,ellbins,fwhmrad,guess,ds_dcb,spectra,itmax=
         ############################################################################
         # Critere de convergence ###################################################
         conv=deltac/np.sqrt(np.abs(np.diag(invfisher)))
-        print('     Conv : ',max(abs(conv)))
+        #conv = np.reshape(conv, (2, nbins))
+        #conv[:,0]=0 
+        #conv[:,-1]=0 ### Skip the first and last bins that are crap
+        print('     Conv : ',np.max(np.abs(conv)))
         print('     Likelihood : ',lk[num])
         nplot_tot=1+nspec
         sqrn=int(np.sqrt(nplot_tot))+1
@@ -1616,6 +1620,7 @@ def qml_cross(maps,maps2,mask,covmap,ellbins,fwhmrad,guess,ds_dcb,spectra,itmax=
             mp.xlabel('Iteration')
             mp.ylabel('Likelihood')
             mp.draw()
+            mp.pause(0.05)
         if num==itmax-1:
             convergence=-1
         if np.max(np.abs(conv)) <= 0.01:

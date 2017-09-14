@@ -95,13 +95,18 @@ savefig('wind-chorillos_max_new.pdf')
 x = WS_ms_Avg * cos(-pi/2-np.radians(WindDir_D1_WVT))
 y = WS_ms_Avg * sin(-pi/2-np.radians(WindDir_D1_WVT))
 mask = (x==0) & (y==0)
+clf()
 bla = hist2d(x[~mask],y[~mask], bins=300, range=[[-15,15],[-5,5]],normed=True)
 xlabel('m/sec ')
 ylabel('m/sec ')
 
+import scipy.ndimage
+blanew = scipy.ndimage.gaussian_filter(bla[0], 5)
 
-
-
+clf()
+imshow(blanew.T, origin='lower',extent=[-15,15,-15,15])
+xlabel('m/sec ')
+ylabel('m/sec ')
 
 
 

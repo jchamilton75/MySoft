@@ -22,13 +22,14 @@ maxiter = 1000
 tol = 5e-6
 racenter = 0.0      # deg
 deccenter = -57.0   # deg
-angspeed = 1        # deg/sec
-delta_az = 20.      # deg
+angspeed = 3.        # deg/sec
+delta_az = 30.      # deg
 angspeed_psi = 0.1  # deg/sec
 maxpsi = 45.        # deg
-nsweeps_el = 300
+duration_cst_elev = 60. # minutes
+nsweeps_el = int(duration_cst_elev*60./(2*delta_az/angspeed))
 duration = 24.       # hours
-ts = duration*3600/2**23            # seconds Chosen in order to have a power of 2 in 
+ts = duration*3600/2**20            # seconds Chosen in order to have a power of 2 in 
 center = equ2gal(racenter, deccenter)
 
 ####### Create some sampling
@@ -54,7 +55,18 @@ subplot(2,1,2)
 plot(samplingok.time/3600, samplingok.elevation,',')
 xlabel('Time [Hours]')
 ylabel('Elevation [Deg.]')
+ylim(25, 60)
 savefig('daily_azel.png')
+
+ra,dec = sampling.equatorial.T
+ra[ra > 200]-=360
+clf()
+scatter(ra,dec, c=sampling.elevation, marker='.',edgecolor='face', alpha=0.9)
+cb=colorbar()
+cb.set_label('Elevation')
+xlabel('Right Ascension (degrees)')
+ylabel('Declination')
+savefig('radec_elevation.png')
 
 
 
@@ -90,7 +102,7 @@ subplot(3,1,2)
 plot(tt/60, azprime)
 xlabel('Time [Minutes]')
 ylabel('Angular speed [deg/s]')
-ylim(-1.5,1.5)
+ylim(-5,5)
 xlim(0,2)
 subplot(3,1,3)
 plot(tt2/60, acc)

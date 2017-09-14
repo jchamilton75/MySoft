@@ -31,7 +31,7 @@ sz_ptg = 10.
 nb_ptg = 1000
 effective_duration = 2.
 ripples = False   
-
+noiseless = True
 
 
 ### Mapmaking
@@ -46,7 +46,7 @@ parameters = {'nside':nside, 'center':center, 'dust_coeff': dust_coeff,
 				'sz_ptg':sz_ptg, 'nb_ptg':nb_ptg, 'effective_duration':effective_duration, 
 				'tol': tol, 'ripples':ripples,
 				'nf_sub_build':nf_sub_build, 
-				'nf_sub_rec': nf_sub_rec }
+				'nf_sub_rec': nf_sub_rec, 'noiseless':noiseless }
 
 
 name = sys.argv[1]
@@ -85,7 +85,8 @@ therms = np.std(diffmap[:,~unseen,:], axis = 1)
 FitsArray(therms).save(name+'_rms.fits')
 FitsArray(nus).save(name+'_nus.fits')
 FitsArray(nus_edge).save(name+'_nus_edges.fits')
-FitsArray(diffmap).save(name+'_diffmaps.fits')
+FitsArray(maps_convolved).save(name+'_maps_convolved.fits')
+FitsArray(maps_recon).save(name+'_maps_recon.fits')
 
 
 

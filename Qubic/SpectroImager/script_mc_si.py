@@ -23,6 +23,7 @@ nside = 256
 center_gal = 0, 90
 center = gal2equ(center_gal[0], center_gal[1])
 dust_coeff = 1.39e-2
+seed=None
 
 ### Detectors (for now using random pointing)
 band = 150
@@ -38,7 +39,7 @@ noiseless = True
 tol = 1e-4
 
 ### Number of sub-bands to build the TOD
-nf_sub_build = 15
+nf_sub_build = 2
 nf_sub_rec = 2
 
 parameters = {'nside':nside, 'center':center, 'dust_coeff': dust_coeff, 
@@ -46,7 +47,7 @@ parameters = {'nside':nside, 'center':center, 'dust_coeff': dust_coeff,
 				'sz_ptg':sz_ptg, 'nb_ptg':nb_ptg, 'effective_duration':effective_duration, 
 				'tol': tol, 'ripples':ripples,
 				'nf_sub_build':nf_sub_build, 
-				'nf_sub_rec': nf_sub_rec, 'noiseless':noiseless }
+				'nf_sub_rec': nf_sub_rec, 'noiseless':noiseless, 'seed':seed }
 
 
 name = sys.argv[1]

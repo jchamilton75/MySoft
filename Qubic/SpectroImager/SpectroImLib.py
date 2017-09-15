@@ -48,6 +48,9 @@ def create_input_sky(parameters):
   band = parameters['band']
   relative_bandwidth = parameters['relative_bandwidth']
   Nbfreq_in, nus_edge_in, nus_in, deltas_in, Delta_in, Nbbands_in = compute_freq(band, relative_bandwidth, Nf)
+  # seed
+  if parameters['seed']:
+    np.random.seed(parameters['seed'])
   # Generate the input CMB map
   sp = read_spectra(0)
   cmb = np.array(hp.synfast(sp, parameters['nside'], new=True, pixwin=True)).T

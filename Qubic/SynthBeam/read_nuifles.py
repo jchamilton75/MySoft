@@ -58,12 +58,9 @@ allphiY = np.zeros((400,nn,nn))
 for i in xrange(len(files)):
     print(i)
     data = np.loadtxt(files[i], skiprows=4)
-    #data = np.loadtxt(files[i], skiprows=2)
     allampX[i,:,:] = np.reshape(data[:,0],(nn,nn))
-    #allampX[i,:,:] = np.reshape(10.0**data[:,0]/10,(nn,nn))
     allphiX[i,:,:] = np.reshape(data[:,1],(nn,nn))
     allampY[i,:,:] = np.reshape(data[:,2],(nn,nn))
-    #allampY[i,:,:] = np.reshape(10.0**data[:,2]/10,(nn,nn))
     allphiY[i,:,:] = np.reshape(data[:,3],(nn,nn))
 
 #### Just some display, can be skipped
@@ -120,10 +117,59 @@ imshow((np.abs(np.sum(Ax,axis=0))))
 colorbar()
 
 #### With integration
-external_A = [-xx, -yy, allampX, allphiX]
+external_A = [-xx, yy, allampX, allphiX]
 reload(myinstrument)
-scene = QubicScene(256)
+scene = QubicScene(512)
 inst = myinstrument.QubicInstrument(filter_nu=150e9)
+
+
+
+######## Créidhe's code
+idet=231
+sbideal = inst[idet].get_synthbeam(scene)[0]
+sbnew = inst[idet].get_synthbeam(scene, external_A=external_A)[0]
+blm_ideal = hp.anafast(sbideal)
+blm_sim = hp.anafast(sbnew)
+
+figure()
+hp.gnomview(sbideal, rot=[0,90], reso=5, sub=(2,2,1),
+    title='Ideal - No Pix. Int.')
+hp.gnomview(sbnew, rot=[0,90], reso=5, sub=(2,2,2),
+    title='Sim - No Pix. Int.')
+subplot(2,2,3)
+plot(blm_ideal, label='ideal')
+xlim(0,300)
+subplot(2,2,4)
+plot(blm_sim, label='Sim')
+xlim(0,300)
+
+
+idet=231
+sbideal = inst[idet].get_synthbeam(scene)[0]
+sbideal = sbideal/np.max(sbideal)
+
+sbnew = inst[idet].get_synthbeam(scene, external_A=external_A)[0]
+sbnew *= np.sum(np.nan_to_num(sbideal))/np.sum(np.nan_to_num(sbnew))
+
+
+blm_ideal = hp.anafast(sbideal)
+blm_sim = hp.anafast(sbnew)
+
+figure()
+hp.gnomview(sbideal, rot=[0,90], reso=5, sub=(2,2,1),
+    title='Ideal - No Pix. Int.')
+hp.gnomview(sbnew, rot=[0,90], reso=5, sub=(2,2,2),
+    title='Sim - No Pix. Int.')
+subplot(2,1,2)
+plot(blm_ideal, label='ideal')
+plot(blm_sim, label='Sim')
+legend()
+xlim(0,300)
+
+
+
+
+
 
 #### Which detector is chosen ?
 #idet=231

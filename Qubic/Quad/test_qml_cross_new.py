@@ -126,7 +126,7 @@ print(fin-init)
 
 
 
-signoise=0.1
+signoise=0.15
 mapi,mapq,mapu=hp.synfast(spectra[1:],nside,fwhm=fwhmrad,pixwin=True,new=True)
 themapi=mapi.copy()
 themapi[mask]=0

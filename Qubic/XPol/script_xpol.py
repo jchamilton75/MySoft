@@ -44,7 +44,7 @@ nbins = len(ell_binned)
 nbmc = 100
 allclsout = np.zeros((nbmc, 6, nbins))
 allcls = np.zeros((nbmc, 6, lmax+1))
-bar = progress_bar(nbmc)
+#bar = progress_bar(nbmc)
 for i in np.arange(nbmc):
     print(i)
     maps = hp.synfast(spectra, nside, fwhm=0, pixwin=True, new=True,

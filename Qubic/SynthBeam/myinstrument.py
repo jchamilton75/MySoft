@@ -717,7 +717,7 @@ class QubicInstrument(Instrument):
         nhorn = int(np.sum(horn.open))
         npix = len(index)
         nbytes_B = npix * nhorn * 24
-        ngroup = np.ceil(nbytes_B / MAX_MEMORY_B)
+        ngroup = int(np.ceil(nbytes_B / MAX_MEMORY_B))
         out = np.zeros(position.shape[:-1] + (len(scene),),
                        dtype=synthbeam_dtype)
         for s in split(npix, ngroup):
@@ -767,6 +767,7 @@ class QubicInstrument(Instrument):
             [3] : array of [nhorns, nn, nn] with phase in degrees
         detector_integrate: Optional, number of subpixels in x direction for integration over detectors
             default (None) is no integration => uses the center of the pixel
+        detpos: Optional, position in the focal plane at which the Synthesized Beam is desider as np.array([x,y,z])
         
 
         """
@@ -790,7 +791,7 @@ class QubicInstrument(Instrument):
             ymax = np.max(self.detector.vertex[...,1:2])
             allx = np.linspace(xmin, xmax, detector_integrate)
             ally = np.linspace(ymin, ymax, detector_integrate)
-            bla = 0
+            sb = 0
             for i in xrange(len(allx)):
                 print(i,len(allx))
                 for j in xrange(len(ally)):
@@ -801,7 +802,7 @@ class QubicInstrument(Instrument):
                             scene, pos, self.detector.area, self.filter.nu,
                             self.filter.bandwidth, self.horn, self.primary_beam,
                             self.secondary_beam, self.synthbeam.dtype, theta_max, external_A=external_A)/detector_integrate**2
-            return bla        
+            return sb        
 
 
 def _argsort_reverse(a, axis=-1):

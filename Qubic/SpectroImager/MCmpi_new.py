@@ -41,8 +41,9 @@ print '========================================================== Hello ! I am r
 dictfilename = sys.argv[1]
 name = sys.argv[2]
 tol = float(sys.argv[3])
-maxnfreq = int(sys.argv[4])
-arguments = sys.argv[5:]
+minnfreq = int(sys.argv[4])
+maxnfreq = int(sys.argv[5])
+arguments = sys.argv[6:]
 nargs = int(len(arguments)/2)
 
 d = qubic.qubicdict.qubicDict()
@@ -98,7 +99,7 @@ if rank == 0:
       t1 = time.time()
       print('************************** All TOD OK in {} minutes'.format((t1-t0)/60))
 
-for nf_sub_rec in np.arange(maxnfreq)+1:
+for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       ##### Mapmaking
       print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
       maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0)

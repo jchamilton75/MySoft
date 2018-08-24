@@ -33,10 +33,10 @@ ndata = 10
 signoise = 0.
 xmin = 0.
 xmax = 1.
-amin = -10
-amax = 10.
-bmin = -10.
-bmax = 10.
+amin = -200
+amax = 200.
+bmin = -200.
+bmax = 200.
 
 truevals = np.zeros((nreal, 2))
 xvalues = np.zeros((nreal, ndata))
@@ -97,6 +97,7 @@ early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
 history=model.fit(X_train,Y_train, epochs=3000, batch_size=100, validation_split=0.2, verbose=0, callbacks=[early_stop, PrintNum()])
 
 # summarize history for loss
+clf()
 plot(history.history['loss'])
 plot(history.history['val_loss'])
 title('model loss')
@@ -107,18 +108,13 @@ yscale('log')
 show()
 print(min(history.history['loss']), min(history.history['val_loss']), len(history.history['val_loss']))
 
-Y_trainPredict = model.predict(X_train,verbose=1)
-print(Y_trainPredict.shape)
 
-xxx = np.linspace(-1,1,100)
-subplot(1,2,1)
-plot(Y_trainPredict[:,0], Y_train[:,0],',')
-plot(xxx,xxx)
-subplot(1,2,2)
-plot(Y_trainPredict[:,1], Y_train[:,1],',')
-plot(xxx,xxx)
-
-ntest = 1000
+################# Testing
+ntest = 10000
+amax_test = 10.
+amin_test = -10.
+bmax_test = 10.
+bmin_test = -10.
 
 truevals_test = np.zeros((ntest, 2))
 xtest = np.zeros((ntest, ndata))
@@ -127,9 +123,8 @@ ytest = np.zeros((ntest, ndata))
 for i in xrange(ntest):  
   progress_bar(i,ntest)
   xx = np.random.rand(ndata)*(xmax-xmin)+xmin
-  aval = np.random.rand()*(amax-amin)+amin
-  bval = np.random.rand()*(bmax-bmin)+bmin
-  noise = np.random.randn(ndata)
+  aval = np.random.rand()*(amax_test-amin_test)+amin_test
+  bval = np.random.rand()*(bmax_test-bmin_test)+bmin_test
   yy = aval * xx + bval
   truevals_test[i,0] = aval
   truevals_test[i,1] = bval
@@ -142,10 +137,10 @@ Y_Predict = model.predict(X_test/max_x,verbose=1)*max_y
 xxx = linspace(-10,10,100)
 clf()
 subplot(2,2,1)
-plot(Y_Predict[:,0], truevals_test[:,0],',')
+plot(truevals_test[:,0],Y_Predict[:,0], ',')
 plot(xxx,xxx)
 subplot(2,2,2)
-plot(Y_Predict[:,1], truevals_test[:,1],',')
+plot(truevals_test[:,1],Y_Predict[:,1], ',')
 plot(xxx,xxx)
 subplot(2,2,3)
 bla = hist(Y_Predict[:,0] - truevals_test[:,0], bins=30, range=[-1.5,1.5])
@@ -250,7 +245,7 @@ legend()
 Essaons de regarder directement les samples pur une valeur de bruit donnée
 """
 
-thesignoise = 15
+thesignoise = 20
 thenoisey = np.random.randn(ntest,ndata)*thesignoise
 theX_test = np.concatenate((xtest,ytest + thenoisey), axis=1)
 
@@ -269,12 +264,6 @@ plot(theY_Predict[:,0], theY_Predict[:,1],'.', label = 'Machine Learning')
 plot(truevals_test[:,0], truevals_test[:,1],'.', label = 'True')
 legend()
 title('Values')
-
-figure()
-plot(ab[:,0]-truevals_test[:,0], ab[:,1]-truevals_test[:,1],'.', label = 'Chi2')
-plot(theY_Predict[:,0]-truevals_test[:,0], theY_Predict[:,1]-truevals_test[:,1],'.', label = 'Machine Learning')
-legend()
-title('Residuals')
 
 figure()
 subplot(1,2,1)

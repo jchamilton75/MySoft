@@ -142,7 +142,7 @@ class PrintNum(keras.callbacks.Callback):
 early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
 
 
-history=model.fit(myalms[0:ilim,:]/mx, mycls[0:ilim]/my, epochs=200, batch_size=1000, validation_split=0.1, verbose=0, callbacks=[early_stop, PrintNum()])
+history=model.fit(myalms[0:ilim,:]/mx, mycls[0:ilim,:]/my, epochs=200, batch_size=1000, validation_split=0.1, verbose=0, callbacks=[early_stop, PrintNum()])
 
 # summarize history for loss
 plot(history.history['loss'])
@@ -197,7 +197,7 @@ model_T = Sequential()
 
 from keras.layers import Dense
 model_T.add(Dense(units=npixok*2, activation='relu', input_dim=npixok, kernel_initializer='uniform'))
-model_T.add(Dense(units=nl*(nl+1), activation='relu', input_dim=npixok, kernel_initializer='uniform'))
+model_T.add(Dense(units=nl*(nl+1), activation='relu', kernel_initializer='uniform'))
 model_T.add(Dense(units=nl, activation='linear'))
 
 model_T.compile(optimizer='adam',
@@ -205,7 +205,7 @@ model_T.compile(optimizer='adam',
               metrics=['accuracy'])
 
 # Training
-fraction = 0.8
+fraction = 0.9
 ilim = int(nbmodels*fraction)
 print(ilim)
 
@@ -221,13 +221,14 @@ class PrintNum(keras.callbacks.Callback):
     sys.stdout.write('.')
     sys.stdout.flush()
 
-early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
+early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
 
-historyT=model_T.fit(mymaps[0:ilim,:]/mxT, mycls[0:ilim]/myT, epochs=200, batch_size=1000, 
+historyT=model_T.fit(mymaps[0:ilim,:]/mxT, mycls[0:ilim,:]/myT, epochs=200, batch_size=1000, 
   validation_split=0.1, verbose=1, callbacks=[early_stop, PrintNum()])
 
 # summarize history for loss
+clf()
 plot(historyT.history['loss'])
 plot(historyT.history['val_loss'])
 title('model loss')
@@ -245,31 +246,43 @@ expcls_test = expcls[ilim:,:]
 
 resultT = myT * model_T.predict(mymaps_test / mxT, batch_size=128)
 
+
+mydls_test = lt*(lt+1)*mycls_test
+expdls_test = lt*(lt+1)*expcls_test
+resultDl = lt*(lt+1)*resultT
+
 clf()
 num=np.random.randint(resultT.shape[0])
-plot(lt, lt*(lt+1)*mycls_test[num,:],label ='Input spectra')
-plot(lt, lt*(lt+1)*expcls_test[num,:],label ='Anafast')
-plot(lt, lt*(lt+1)*resultT[num,:],label ='ML T')
-plot(lt, lt*(lt+1)*result[num,:],label ='ML alm')
+plot(lt, mydls_test[num,:],label ='Input spectra')
+plot(lt, expdls_test[num,:],label ='Anafast')
+plot(lt, resultDl[num,:],label ='ML T')
+#plot(lt, lt*(lt+1)*result[num,:],label ='ML alm')
 title(num)
 legend()
 
 clf()
-a=hist(np.ravel(expcls_test[:,2:]-mycls_test[:,2:]), bins=100, range=[-5,5], alpha=0.5, label='Anafast')
-a=hist(np.ravel(result[:,2:]-mycls_test[:,2:]), bins=100, range=[-5,5], alpha=0.5, label = 'ML alm')
-a=hist(np.ravel(resultT[:,2:]-mycls_test[:,2:]), bins=100, range=[-5,5], alpha=0.5, label = 'ML T')
-yscale('log')
-legend()
+subplot(2,1,1)
+bla = np.ravel(expdls_test[:,2:]-mydls_test[:,2:])
+a=hist(bla, bins=300, range=[-1000,1000], alpha=0.5, label='Anafast: {0:5.2f}+/-{1:5.2f} RMS={2:5.2f}'.format(mean(bla), std(bla)/sqrt(len(bla)), std(bla)))
+#bla = np.ravel(result[:,2:]-mycls_test[:,2:])
+#a=hist(bla, bins=300, range=[-5,5], alpha=0.5, label = 'ML alm: {0:5.2f}+/-{1:5.2f} RMS={2:5.2f}'.format(mean(bla), std(bla)/sqrt(len(bla)), std(bla)))
+bla = np.ravel(resultDl[:,2:]-mydls_test[:,2:])
+a=hist(bla, bins=300, range=[-1000,1000], alpha=0.5, label = 'ML T: {0:5.2f}+/-{1:5.2f} RMS={2:5.2f}'.format(mean(bla), std(bla)/sqrt(len(bla)), std(bla)))
+#yscale('log')
+legend(fontsize=8)
 
-ch2anafast = np.sum((expcls_test[:,2:]-mycls_test[:,2:])**2, axis=1)
-ch2ML_T = np.sum((resultT[:,2:]-mycls_test[:,2:])**2, axis=1)
+ch2anafast = np.sum((expdls_test[:,2:]-mydls_test[:,2:])**2, axis=1)
+ch2ML_T = np.sum((resultDl[:,2:]-mydls_test[:,2:])**2, axis=1)
 
-figure()
-a=hist(ch2anafast, bins=100, range=[0,10000], alpha=0.5, label='Anafast')
-a=hist(ch2ML, bins=100, range=[0,10000], alpha=0.5, label = 'ML alm')
-a=hist(ch2ML_T, bins=100, range=[0,10000], alpha=0.5, label = 'ML T')
+subplot(2,1,2)
+bla = ch2anafast
+a=hist(bla, bins=300, range=[0,10000000], alpha=0.5, label='Anafast: mean={0:5.2f} RMS={1:5.2f}'.format(mean(bla), std(bla)))
+#bla = ch2ML
+#a=hist(bla, bins=300, range=[0,10000], alpha=0.5, label = 'ML alm: mean={0:5.2f} RMS={1:5.2f}'.format(mean(bla), std(bla)))
+bla = ch2ML_T
+a=hist(bla, bins=300, range=[0,10000000], alpha=0.5, label = 'ML T: mean={0:5.2f} RMS={1:5.2f}'.format(mean(bla), std(bla)))
 yscale('log')
-legend()
+legend(fontsize=8)
 
 
 

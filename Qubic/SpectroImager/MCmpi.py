@@ -63,7 +63,7 @@ tol = 1e-4
 
 ### Number of sub-bands to build the TOD
 nf_sub_build = 15
-nf_sub_rec = 2
+nf_sub_rec = 1
 
 parameters = {'nside':nside, 'center':center, 'dust_coeff': dust_coeff, 
                         'band':band, 'relative_bandwidth':relative_bandwidth,
@@ -106,6 +106,7 @@ if rank==0:
       x0 = si.create_input_sky(parameters)
       t1 = time.time()
       print('********************* Input Sky - Rank {} - done in {} seconds'.format(rank, t1-t0))
+      FitsArray(x0).save(name+'_nf{0}'.format(nf_sub_rec)+'_maps_input.fits')
 else:
       x0 = None
       t0 = time.time()
@@ -120,11 +121,17 @@ t1 = time.time()
 p = si.create_random_pointings(parameters['center'], parameters['nb_ptg'], parameters['sz_ptg'], seed=parameters['seed'])
 t2 = time.time()
 print('************************** Pointing - rank {} - done in {} seconds'.format(rank, t2-t1))
+FitsArray(p.equatorial).save(name+'_nf{0}'.format(nf_sub_rec)+'_equatorial.fits')
+FitsArray(p.angle_hwp).save(name+'_nf{0}'.format(nf_sub_rec)+'_angle_hwp.fits')
 
 
 ##### TOD making is intrinsically parallelized (use of pyoperators)
 print('-------------------------- TOD - rank {} Starting'.format(rank))
-TOD = si.create_TOD(parameters, p, x0)
+#TOD = si.create_TOD(parameters, p, x0)
+#FitsArray(TOD).save(name+'_nf{0}'.format(nf_sub_rec)+'_TOD.fits')
+TOD = FitsArray('/Users/hamilton/Qubic/SpectroImager/TestSeed/toto2_nf1_TOD.fits')
+
+
 print('************************** TOD - rank {} Done - elaplsed time is {}'.format(rank,time.time()-t0))
 
 ##### Wait for all the TOD to be done (is it necessary ?)

@@ -123,7 +123,16 @@ ylabel('Synthesized beam')
 legend()
 savefig('sbfig.pdf')
 
-dist = [100.]
+sbth = give_sbcut(th, dx, lam, sqnh, Df=Df, detpos=0.)
+
+f=open('synthbeam.txt','wb')
+for i in xrange(len(th)):
+    f.write('{0:10.5f} {1:10.8f}\n'.format(th[i],sbth[i]))
+f.close()
+
+
+
+dist = [50.]
 for d in dist:
     nu0=130.
     nu1=170.

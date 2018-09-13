@@ -173,11 +173,34 @@ for s in xrange(3):
 
 
 
+#### RMS residus
+toto = allmapsout[0] - allmapsin[0]
+sh = toto.shape
+
+clf()
+for i in xrange(3):
+	subplot(1,3,i+1)
+	hist(np.ravel(toto[:,0,:,i]), range=[-2,2], bins=15)
 
 
+pixstd = np.std(toto[:,0,:,:], axis=0)
+pixmean = np.mean(toto[:,0,:,:], axis=0)
 
+mapsstd = np.zeros((12*ns**2, 3))
+mapsmean = np.zeros((12*ns**2, 3))
+for i in xrange(3):
+	mapsstd[seenmap, i] = pixstd[:,i]
+	mapsmean[seenmap, i] = pixmean[:,i]
 
+hp.mollview(mapsstd[:,0])
 
+hp.gnomview(mapsstd[:,0], rot=center, reso=12)
+hp.gnomview(mapsstd[:,1], rot=center, reso=12)
+hp.gnomview(mapsstd[:,2], rot=center, reso=12)
+
+clf()
+for i in xrange(3):
+	hp.gnomview(mapsmean[:,i], rot=center, reso=12, sub=(1,3,i+1))
 
 
 

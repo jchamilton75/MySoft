@@ -100,7 +100,7 @@ def reconstruct_maps(TOD, d, pointing, nf_sub_rec, x0=None, tol=1e-4):
   Nbfreq, nus_edge, nus, deltas, Delta, Nbbands = qubic.compute_freq(d['filter_nu']/1e9, 
                                               d['filter_relative_bandwidth'], nf_sub_rec)
   arec = create_acquisition_operator_REC(pointing, d, nf_sub_rec)
-  maps_recon = arec.tod2map(TOD, tol=tol, maxiter=100000)
+  maps_recon = arec.tod2map(TOD, tol=tol, maxiter=1500)
   cov = arec.get_coverage()
   if x0 is None:
     return maps_recon, cov, nus, nus_edge

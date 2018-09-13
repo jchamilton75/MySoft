@@ -12,7 +12,7 @@ from pysimulators import FitsArray
 from qubic import gal2equ, equ2gal
 
 from Tools import QubicToolsJCH as qt
-from Tools.ReadMC import *
+from Tools import ReadMC as rmc
 
 nsub=2
 maps = FitsArray('/Users/hamilton/Qubic/SpectroImager/McCori/VaryTolNsubNptg/mpiQ_Nodes_1_Ptg_40000_Noutmax_6_Tol_5e-5_9350825_nf{}_maps_recon.fits'.format(nsub))
@@ -78,18 +78,18 @@ center = equ2gal(0., -57.)
 
 
 rep_sim = '/Users/hamilton/Qubic/SpectroImager/McCori/VaryTolNsubNptg'
-#nsubvals_sim = np.array([1,2,3,4])
-#tolvals = np.array(['5e-4', '1e-4', '5e-5', '1e-5'])
 nsubvals_sim = np.array([1,2,3,4,5,6])
 tolvals = np.array(['5e-4', '1e-4', '5e-5'])
+# nsubvals_sim = np.array([7,8,9,10])
+# tolvals = np.array(['2e-4'])
 allarch4000 = []
 allarch40000 = []
 for k in xrange(len(tolvals)):
     arch4000 = []
     arch40000 = []
     for i in xrange(len(nsubvals_sim)):
-        arch4000.append('mpiQ_Nodes_*_Ptg_4000_Noutmax_6_Tol_{}*_nf{}_maps_recon.fits'.format(tolvals[k],nsubvals_sim[i]))
-        arch40000.append('mpiQ_Nodes_*_Ptg_40000_Noutmax_6_Tol_{}*_nf{}_maps_recon.fits'.format(tolvals[k],nsubvals_sim[i]))
+        arch4000.append('mpiQ_Nodes_*_Ptg_4000_Noutmax_*_Tol_{}*_nf{}_maps_recon.fits'.format(tolvals[k],nsubvals_sim[i]))
+        arch40000.append('mpiQ_Nodes_*_Ptg_40000_Noutmax_*_Tol_{}*_nf{}_maps_recon.fits'.format(tolvals[k],nsubvals_sim[i]))
     allarch4000.append(arch4000)
     allarch40000.append(arch40000)
 
@@ -108,7 +108,7 @@ allmrms_sim40000 = []
 allmrms_cov_sim40000 = []
 allmrms_th_sim40000 = []
 for k in xrange(len(tolvals)):
-    theallmeanmat, xsim, theally, theally_cov, theally_th, mean_rms, mean_rms_cov, mean_rms_covpix = do_all_profiles(rep_sim, 
+    theallmeanmat, xsim, theally, theally_cov, theally_th, mean_rms, mean_rms_cov, mean_rms_covpix = rmc.do_all_profiles(rep_sim, 
         allarch4000[k], nsubvals_sim, rot=center, nbins=10)
     allmeanmat_sim4000.append(theallmeanmat)
     ally_sim4000.append(theally)
@@ -118,7 +118,7 @@ for k in xrange(len(tolvals)):
     allmrms_cov_sim4000.append(mean_rms_cov)
     allmrms_th_sim4000.append(mean_rms_covpix)
 
-    theallmeanmat, xsim, theally, theally_cov, theally_th, mean_rms, mean_rms_cov, mean_rms_covpix = do_all_profiles(rep_sim, 
+    theallmeanmat, xsim, theally, theally_cov, theally_th, mean_rms, mean_rms_cov, mean_rms_covpix = rmc.do_all_profiles(rep_sim, 
         allarch40000[k], nsubvals_sim, rot=center, nbins=10)
     allmeanmat_sim40000.append(theallmeanmat)
     ally_sim40000.append(theally)
@@ -233,7 +233,7 @@ for istokes in xrange(3):
 
 clf()
 for istokes in xrange(3):
-    k=1
+    k=0
     plot(nsubvals_sim, allmrms_cov_sim40000[k][:,istokes]/allmrms_cov_sim40000[k][0,istokes],label=stokes[istokes],lw=2)
 xlabel('Number of sub-frequencies')
 ylabel('Noise increase on maps')
@@ -241,6 +241,20 @@ ylim(0.95,1.3)
 legend()
 #savefig('noise_increase.png')
 
+
+clf()
+plot(nsubvals_sim, sqrt(nsubvals_sim),'k--',label='Optimal $\sqrt{N}$',lw=2)
+for istokes in xrange(3):
+    k=0
+    ls = '-'
+    if istokes==2: 
+        ls ='--'
+    plot(nsubvals_sim, allmrms_cov_sim40000[k][:,istokes]/allmrms_cov_sim40000[k][0,istokes]*sqrt(nsubvals_sim),label=stokes[istokes],lw=2,ls=ls)
+xlabel('Number of sub-frequencies')
+ylabel('Relative maps RMS')
+legend()
+title('QUBIC Spectro-Imaging')
+savefig('rms_spectroim.png')
 
 
 

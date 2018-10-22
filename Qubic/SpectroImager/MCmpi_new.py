@@ -1,11 +1,8 @@
 #!/bin/env python
 from __future__ import division
 import sys
-path = "/obs/jhamilton/.local/lib/python2.7/site-packages/"
-sys.path.insert(0,path)
 import healpy as hp
 import numpy as np
-print(np.version.version)
 
 import matplotlib.pyplot as mp
 import qubic
@@ -14,6 +11,7 @@ from pysimulators import FitsArray
 import time
 
 from mpi4py import MPI
+#from pyoperators import MPI
 import os
 
 
@@ -30,7 +28,7 @@ if rank == 0:
 
 
 
-print '========================================================== Hello ! I am rank number {}'.format(rank)
+#print '========================================================== Hello ! I am rank number {}'.format(rank)
 
 
 
@@ -49,7 +47,7 @@ nargs = int(len(arguments)/2)
 d = qubic.qubicdict.qubicDict()
 d.read_from_file(dictfilename)
 
-print(arguments)
+#print(arguments)
 for i in xrange(nargs):
       print('seeting: {0} to from {1} to {2}'.format(arguments[2*i],d[arguments[2*i]],arguments[2*i+1]))
       d[arguments[2*i]] = type(d[arguments[2*i]])(arguments[2*i+1])
@@ -85,13 +83,13 @@ x0 = MPI.COMM_WORLD.bcast(x0)
 t1 = time.time()
 p = qubic.get_pointing(d)
 t2 = time.time()
-print('************************** Pointing - rank {} - done in {} seconds'.format(rank, t2-t1))
+#print('************************** Pointing - rank {} - done in {} seconds'.format(rank, t2-t1))
 
 
 ##### TOD making is intrinsically parallelized (use of pyoperators)
-print('-------------------------- TOD - rank {} Starting'.format(rank))
+#print('-------------------------- TOD - rank {} Starting'.format(rank))
 TOD = si.create_TOD(d, p, x0)
-print('************************** TOD - rank {} Done - elaplsed time is {}'.format(rank,time.time()-t0))
+#print('************************** TOD - rank {} Done - elaplsed time is {}'.format(rank,time.time()-t0))
 
 ##### Wait for all the TOD to be done (is it necessary ?)
 MPI.COMM_WORLD.Barrier()
@@ -99,9 +97,12 @@ if rank == 0:
       t1 = time.time()
       print('************************** All TOD OK in {} minutes'.format((t1-t0)/60))
 
+
+
 for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       ##### Mapmaking
-      print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
+      if rank == 0:
+            print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
       maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0)
       if nf_sub_rec==1: maps_recon=np.reshape(maps_recon, np.shape(maps_convolved))
       cov = np.sum(cov, axis=0)
@@ -112,9 +113,11 @@ for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       maps_recon[:,unseen,:] = hp.UNSEEN
       diffmap[:,unseen,:] = hp.UNSEEN
       therms = np.std(diffmap[:,~unseen,:], axis = 1)
-      print('************************** Map-Making on {} sub-map(s) - Rank {} Done'.format(nf_sub_rec,rank))
+      if rank == 0:
+            print('************************** Map-Making on {} sub-map(s) - Rank {} Done'.format(nf_sub_rec,rank))
 
       MPI.COMM_WORLD.Barrier()
+
       if rank == 0:
             FitsArray(nus).save(name+'_nf{0}'.format(nf_sub_rec)+'_nus.fits')
             FitsArray(nus_edge).save(name+'_nf{0}'.format(nf_sub_rec)+'_nus_edges.fits')
@@ -126,5 +129,5 @@ for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
 
       MPI.COMM_WORLD.Barrier()
 
-
+MPI.Finalize()
 

@@ -13,11 +13,12 @@ def cov2corr(mat):
     return newmat
 
 
-# ### Class SmallMaps: uses less memory
-# class SmallMaps():
-# 	def __init__(self, healpixmapx):
-# 		okpix = 
 
+def smallhpmap(map, seen):
+    ns = hp.npix2nside(len(seen))
+    allmap = np.zeros(12*ns**2) + hp.UNSEEN
+    allmap[seen] = map
+    return allmap
 
 
 

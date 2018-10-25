@@ -79,7 +79,7 @@ xlim(0,30)
 grid()
 xlabel('Wind Speed [m/s]')
 title('Average over 1 minute')
-savefig('wind-chorillos_avg1min_new.pdf')
+#savefig('wind-chorillos_avg1min_new.pdf')
 
 bla=hist(WS_ms_Max, range=[0,30], bins=300, cumulative=True,normed=1, alpha=0.1)
 clf()
@@ -89,19 +89,24 @@ legend()
 xlabel('Wind Speed [m/s]')
 title('Maximum measured in 1 minute')
 grid()
-savefig('wind-chorillos_max_new.pdf')
+#savefig('wind-chorillos_max_new.pdf')
 
 
 x = WS_ms_Avg * cos(-pi/2-np.radians(WindDir_D1_WVT))
 y = WS_ms_Avg * sin(-pi/2-np.radians(WindDir_D1_WVT))
 mask = (x==0) & (y==0)
+clf()
 bla = hist2d(x[~mask],y[~mask], bins=300, range=[[-15,15],[-5,5]],normed=True)
 xlabel('m/sec ')
 ylabel('m/sec ')
 
+import scipy.ndimage
+blanew = scipy.ndimage.gaussian_filter(bla[0], 1.5)
 
-
-
+clf()
+imshow(blanew.T, origin='lower',extent=[-15,15,-15,15])
+xlabel('m/sec ')
+ylabel('m/sec ')
 
 
 
@@ -158,7 +163,7 @@ for fn in dates:
     year = int(f0[0])
     month = int(f0[1])
     day = int(f0[2])
-    ts, tau, tau_s = np.genfromtxt(fn,invalid_raise=False, skiprows=1, usecols=[0,1,2]).T
+    ts, tau, tau_s = np.genfromtxt(fn,invalid_raise=False, skip_header=1, usecols=[0,1,2]).T
     yy = np.zeros(len(ts))+year
     mm = np.zeros(len(ts))+month
     dd = np.zeros(len(ts))+day
@@ -255,7 +260,7 @@ ylim(0,0.6)
 xlim(1,12)
 legend()
 grid()
-savefig('tau_qubic_freqs.pdf')
+#savefig('tau_qubic_freqs.pdf')
 
 
 clf()
@@ -353,7 +358,7 @@ plot(jdsince1, Tchorillo-273.15,'r.', alpha=0.05)
 xlabel('Julian Days (start 01/01/2011)')
 ylabel('Atmosphere Temperature in Kelvins')
 legend(numpoints=1)
-savefig('temperature_sadc_new.pdf')
+#savefig('temperature_sadc_new.pdf')
 
 clf()
 #errorbar(np.arange(12)+1,TAvchorillo-273.15, yerr=STAvchorillo, fmt='bo',xerr=0.5, label='Median over 2 years',lw=3)
@@ -365,7 +370,7 @@ ylim(-15,15)
 xlabel('Month')
 ylabel('Atmospheric temperature $[K]$')
 legend(numpoints=1)
-savefig('temperature_month_sadc_new.pdf')
+#savefig('temperature_month_sadc_new.pdf')
 
 clf()
 #errorbar(np.arange(24),TAvchorillo_day-273.15, yerr=STAvchorillo_day, fmt='bo',xerr=0.5, label='Median over 2 years', lw=3)
@@ -376,7 +381,7 @@ xlim(0,23)
 xlabel('Hour')
 ylabel('Atmospheric Temperature $[K]$')
 legend(numpoints=1)
-savefig('temperature_hour_sadc_new.pdf')
+#savefig('temperature_hour_sadc_new.pdf')
 
 
 ### Now one can calculate NETs
@@ -446,17 +451,17 @@ legend()
 grid()
 #savefig('atm_emissivity-cho.png')
 
-clf()
-xlim(0,13)
-xlabel('Month')
-ylabel(r'Atmospheric Emissivity')
-plot(month, em220_ch, 'b', lw=3, label ='Chorillos - 220 GHz')
-plot(month, em150_ch, 'r', lw=3, label ='Chorillos - 150 GHz')
-plot(month, em220_chaj, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
-plot(month, em150_chaj, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
-ylim(0,0.3)
-legend()
-grid()
+# clf()
+# xlim(0,13)
+# xlabel('Month')
+# ylabel(r'Atmospheric Emissivity')
+# plot(month, em220_ch, 'b', lw=3, label ='Chorillos - 220 GHz')
+# plot(month, em150_ch, 'r', lw=3, label ='Chorillos - 150 GHz')
+# plot(month, em220_chaj, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
+# plot(month, em150_chaj, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
+# ylim(0,0.3)
+# legend()
+# grid()
 #savefig('atm_emissivity-cho-chaj.png')
 
 clf()
@@ -476,8 +481,8 @@ xlabel('Month')
 ylabel(r'Atmospheric Brightness Temperature (K)')
 plot(month, em220_ch * TAvchorillo, 'b', lw=3, label ='Chorillos - 220 GHz')
 plot(month, em150_ch * TAvchorillo, 'r', lw=3, label ='Chorillos - 150 GHz')
-plot(month, em220_chaj * TAvchorillo, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
-plot(month, em150_chaj * TAvchorillo, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
+# plot(month, em220_chaj * TAvchorillo, 'b--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 220 GHz')
+# plot(month, em150_chaj * TAvchorillo, 'r--', lw=3, label ='Chajnantor (1998 ext from 857 GHz) - 150 GHz')
 ylim(0,110)
 legend()
 grid()
@@ -550,10 +555,10 @@ grid()
 frac_time = 0.4
 monthsok = np.arange(12)[2:11]
 
-np.mean(net150_dc)
-np.mean(net220_dc)
-np.mean(net150_ch[monthsok])
-np.mean(net220_ch[monthsok])
+print(np.mean(net150_dc))
+print(np.mean(net220_dc))
+print(np.mean(net150_ch[monthsok]))
+print(np.mean(net220_ch[monthsok]))
 
 
 final_net150_dc = np.mean(net150_dc)
@@ -584,6 +589,62 @@ for i in xrange(len(names)):
     aa = statstr2(dd)[1]
     print('{0:15} | {1:6.2f} | {2:6.2f} | {3:6.2f} | {4:6.2f} | {5:6.2f} | {6:6.2f} | {7:6.2f} '.format(nn, np.mean(dd),
             np.std(dd), np.min(dd), aa[0], aa[1], aa[2], np.max(dd)))
+
+
+
+
+
+
+################## Much simpler but looks very optimistic
+h = 6.626070040e-34
+c = 299792458
+k = 1.3806488e-23
+
+def Bnu(nuGHz, T):
+    nu = nuGHz * 1e9
+    val = 2 * h * nu**3 / c**2 / (np.exp(h * nu / k / T) -1)
+    return val
+    
+def dBnudT(nuGHz, T):
+    bnu = Bnu(nuGHz, T)
+    nu = nuGHz * 1e9
+    val = c**2 / 2 / nu**2 * bnu * bnu * np.exp(h * nu / k / T) / k / T**2
+    return val
+    
+def nep2net(nep, nuGHz, eff, deltanuGHz, T):
+    deltanu = deltanuGHz * 1e9
+    nu = nuGHz * 1e9
+    lambd = c / nu
+    net = nep / (lambd**2 * eff * deltanu) / dBnudT(nuGHz, T) * 1e6
+    return net/sqrt(2)*sqrt(2)   ### so that we are in muK.sqrt(s) for polarized if NEP is for intensity in muK/sqrt(Hx)
+ 
+import qubic
+def netpol_qubic(f, relative_bw, eff):
+    scene = qubic.QubicScene(256)
+    inst = qubic.QubicInstrument(filter_nu=f*1e9, filter_relative_bandwidth=relative_bw)
+    nep_photons = np.mean(inst._get_noise_photon_nep(scene)*sqrt(2))   #sqrt(2) in order to have Polarized NEP
+    nep_detector = inst.detector.nep
+    nep_tot = np.sqrt(nep_photons**2 + nep_detector**2)
+    net_photons = nep2net(nep_photons, f, eff, relative_bw*f, 2.728)
+    net_detector = nep2net(nep_detector, f, eff, relative_bw*f, 2.728)
+    net_tot = nep2net(nep_tot, f, eff, relative_bw*f, 2.728)
+    return net_tot
+
+   
+
+print(netpol_qubic(150., 0.25, 0.3))
+print(netpol_qubic(220., 0.25, 0.3))
+
+
+
+
+
+
+
+
+
+
+
 
 
 

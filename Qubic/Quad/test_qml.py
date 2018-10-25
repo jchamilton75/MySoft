@@ -134,7 +134,8 @@ hp.gnomview(themaps[1],rot=[0,90],reso=10,title='U')
 
 covmap=np.identity(len(ipok)*len(themaps))*signoise**2
 guess=[0,binspec[:,1],binspec[:,2],binspec[:,3],0]
-specout,error,invfisher,lk,num,ds_dcb,conv=qml.qml(themaps,mask,covmap,ellbins,fwhmrad,guess,ds_dcb,spectra,cholesky=True,temp=False,polar=True,plot=True,itmax=20)
+specout,error,invfisher,lk,num,ds_dcb,conv=qml.qml(themaps,mask,covmap,ellbins,
+	fwhmrad,guess,ds_dcb,spectra,cholesky=True,temp=False,polar=True,plot=True,itmax=20)
 
 
 

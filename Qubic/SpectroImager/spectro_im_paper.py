@@ -96,7 +96,7 @@ sqnh = 20
 Df = 1. #m
 minth = -20.
 maxth = 20
-nth = 10000
+nth = 1000
 th = np.linspace(minth, maxth, nth)
 
 sb = np.sin(sqnh * np.pi * dx / lam * np.radians(th))**2 / np.sin(np.pi * dx / lam * np.radians(th))**2
@@ -123,7 +123,16 @@ ylabel('Synthesized beam')
 legend()
 savefig('sbfig.pdf')
 
-dist = linspace(0,50,30)
+sbth = give_sbcut(th, dx, lam, sqnh, Df=Df, detpos=0.)
+
+f=open('synthbeam.txt','wb')
+for i in xrange(len(th)):
+    f.write('{0:10.5f} {1:10.8f}\n'.format(th[i],sbth[i]))
+f.close()
+
+
+
+dist = [50.]
 for d in dist:
     nu0=130.
     nu1=170.
@@ -146,6 +155,27 @@ for d in dist:
     print(np.sum(bb1*bb2))
     
 savefig('sb_freq.pdf')
+
+
+nfreq = 1000
+detpos = 0.
+dnu_nu = 0.25
+nu0 = 150.
+numin = nu0*(1.-dnu_nu/2)
+numax = nu0*(1.+dnu_nu/2)
+nus = np.linspace(numin, numax, nfreq)
+lams = 3e8/(nus*1e9)
+beams = np.zeros((nfreq, nth))
+for i in xrange(nfreq):
+    print(i)
+    beams[i,:] = give_sbcut(th, dx, lams[i], sqnh, Df=Df, detpos=detpos/1000)
+
+clf()
+imshow(10*np.log10(beams), aspect='auto', extent = (minth, maxth, numin, numax), vmin=-35, vmax=0, origin='lower')
+colorbar()
+xlabel(r'$\theta$ [Deg.]')
+ylabel('Frequency [GHz]')
+
 
 
 #### Source 1D

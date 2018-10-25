@@ -578,7 +578,7 @@ class QubicInstrument(Instrument):
             amp = external_A[2]
             phi = external_A[3]
             ix = np.argmin(np.abs(xx-position[0,0]))
-            jy = np.argmin(np.abs(xx-position[0,1]))
+            jy = np.argmin(np.abs(yy-position[0,1]))
             return np.array([amp[:,ix,jy] * (np.cos(phi[:,ix,jy]) + 1j*np.sin(phi[:,ix,jy]))])
             
 
@@ -717,7 +717,7 @@ class QubicInstrument(Instrument):
         nhorn = int(np.sum(horn.open))
         npix = len(index)
         nbytes_B = npix * nhorn * 24
-        ngroup = np.ceil(nbytes_B / MAX_MEMORY_B)
+        ngroup = int(np.ceil(nbytes_B / MAX_MEMORY_B))
         out = np.zeros(position.shape[:-1] + (len(scene),),
                        dtype=synthbeam_dtype)
         for s in split(npix, ngroup):
@@ -728,7 +728,7 @@ class QubicInstrument(Instrument):
             out[..., index_] = abs2(sb, dtype=synthbeam_dtype)
         return out
 
-    def get_synthbeam(self, scene, idet=None, theta_max=45, external_A=None, detector_integrate=None):
+    def get_synthbeam(self, scene, idet=None, theta_max=45, external_A=None, detector_integrate=None, detpos=None):
         """
         Return the detector synthetic beams, computed from the superposition
         of the electromagnetic fields.
@@ -767,15 +767,21 @@ class QubicInstrument(Instrument):
             [3] : array of [nhorns, nn, nn] with phase in degrees
         detector_integrate: Optional, number of subpixels in x direction for integration over detectors
             default (None) is no integration => uses the center of the pixel
+        detpos: Optional, position in the focal plane at which the Synthesized Beam is desider as np.array([x,y,z])
         
 
         """
-        if idet is not None:
+        if detpos is None:
+            pos = self.detector.center
+        else:
+            pos = detpos
+
+        if ((idet is not None) and (detpos is None)):
             return self[idet].get_synthbeam(scene, theta_max=theta_max, external_A=external_A,
                                             detector_integrate=detector_integrate)[0]
         if detector_integrate is None:
             return QubicInstrument._get_synthbeam(
-                scene, self.detector.center, self.detector.area, self.filter.nu,
+                scene, pos, self.detector.area, self.filter.nu,
                 self.filter.bandwidth, self.horn, self.primary_beam,
                 self.secondary_beam, self.synthbeam.dtype, theta_max, external_A=external_A)
         else:
@@ -785,7 +791,7 @@ class QubicInstrument(Instrument):
             ymax = np.max(self.detector.vertex[...,1:2])
             allx = np.linspace(xmin, xmax, detector_integrate)
             ally = np.linspace(ymin, ymax, detector_integrate)
-            bla = 0
+            sb = 0
             for i in xrange(len(allx)):
                 print(i,len(allx))
                 for j in xrange(len(ally)):
@@ -796,7 +802,7 @@ class QubicInstrument(Instrument):
                             scene, pos, self.detector.area, self.filter.nu,
                             self.filter.bandwidth, self.horn, self.primary_beam,
                             self.secondary_beam, self.synthbeam.dtype, theta_max, external_A=external_A)/detector_integrate**2
-            return bla        
+            return sb        
 
 
 def _argsort_reverse(a, axis=-1):

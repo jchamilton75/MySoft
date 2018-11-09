@@ -113,9 +113,8 @@ def create_acquisition_operator_REC(pointing, d, nf_sub_rec, PlanckMaps=None):
 
 def create_TOD(d, pointing, x0):
   atod = create_acquisition_operator_TOD(pointing, d)
-  TOD = atod.get_observation(x0, noiseless=d['noiseless'], convolution=False)
-  #TOD, maps_convolved_useless = atod.get_observation(x0, noiseless=d['noiseless'])
-  #maps_convolved_useless=0
+  TOD, maps_convolved_useless = atod.get_observation(x0, noiseless=d['noiseless'])
+  maps_convolved_useless=0
   return TOD
 
 def reconstruct_maps(TOD, d, pointing, nf_sub_rec, x0=None, tol=1e-4, PlanckMaps=None):

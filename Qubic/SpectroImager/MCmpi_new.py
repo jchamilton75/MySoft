@@ -41,16 +41,29 @@ name = sys.argv[2]
 tol = float(sys.argv[3])
 minnfreq = int(sys.argv[4])
 maxnfreq = int(sys.argv[5])
-arguments = sys.argv[6:]
+import distutils.util
+noI = distutils.util.strtobool(sys.argv[6])
+arguments = sys.argv[7:]
 nargs = int(len(arguments)/2)
+
+# dictfilename = '/Users/hamilton/Qubic/SpectroImager/testFI.dict'
+# name = 'Test'
+# tol = 1e-3
+# minnfreq = 1
+# maxnfreq = 3
+# arguments = ['npointings', '100', 'seed',  '1', 'nf_sub', '15','noI', False]
+# nargs = int(len(arguments)/2)
+
 
 d = qubic.qubicdict.qubicDict()
 d.read_from_file(dictfilename)
 
-#print(arguments)
+print(sys.argv)
+print(arguments)
 for i in xrange(nargs):
       #print('seeting: {0} to from {1} to {2}'.format(arguments[2*i],d[arguments[2*i]],arguments[2*i+1]))
       d[arguments[2*i]] = type(d[arguments[2*i]])(arguments[2*i+1])
+
 
 if rank==0: 
       for k in d.keys(): 
@@ -68,6 +81,11 @@ skypars = {'dust_coeff':1.39e-2, 'r':0}
 if rank==0:
       t0 = time.time()
       x0 = si.create_input_sky(d, skypars)
+      print('Imean:',np.mean(x0[:,:,0]))
+      print(noI)
+      if noI==True:
+            x0[:,:,0] = 0
+      print('Imean:',np.mean(x0[:,:,0]))
       t1 = time.time()
       print('********************* Input Sky - Rank {} - done in {} seconds'.format(rank, t1-t0))
 else:

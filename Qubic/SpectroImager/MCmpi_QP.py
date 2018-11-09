@@ -43,16 +43,19 @@ if rank == 0:
 # maxnfreq = int(sys.argv[5])
 # import distutils.util
 # noI = distutils.util.strtobool(sys.argv[6])
-# arguments = sys.argv[7:]
+# planck = distutils.util.strtobool(sys.argv[7])
+# arguments = sys.argv[8:]
 # nargs = int(len(arguments)/2)
 
-dictfilename = '/Users/hamilton/Qubic/SpectroImager/testFI.dict'
-name = 'Test_Q'
+dictfilename = './testFI.dict'
+name = 'Outputs/Test_QP'
 tol = 1e-4
 minnfreq = 1
 maxnfreq = 3
 noI = False
-arguments = ['npointings', '1000', 'seed',  '1', 'nf_sub', '15', 'photon_noise', False, 'detector_nep', '1e-20']
+planck = False
+#arguments = ['npointings', '1000', 'seed',  '1', 'nf_sub', '15', 'dtheta', 5.]
+arguments=[]
 nargs = int(len(arguments)/2)
 
 
@@ -123,7 +126,11 @@ for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       ##### Mapmaking
       if rank == 0:
             print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
-      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0, PlanckMaps=x0)
+      if planck:
+            PlanckMaps=x0
+      else:
+            PlanckMaps=None
+      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0, PlanckMaps=PlanckMaps)
       if nf_sub_rec==1: maps_recon=np.reshape(maps_recon, np.shape(maps_convolved))
       cov = np.sum(cov, axis=0)
       maxcov = np.max(cov)
@@ -133,6 +140,15 @@ for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       maps_recon[:,unseen,:] = hp.UNSEEN
       diffmap[:,unseen,:] = hp.UNSEEN
       therms = np.std(diffmap[:,~unseen,:], axis = 1)
+
+      stokes = ['I','Q','U']
+      for i in xrange(3):
+            print('Stokes {0}: Input Mean {1:5.2g} +/- {2:5.2g} ; Output Mean {3:5.2g} +/- {4:5.2g} ; Diff Mean {5:5.2g} +/- {6:5.2g}'.format(stokes[i], 
+                  np.mean(maps_convolved[:,~unseen, i]), np.std(maps_convolved[:,~unseen, i]),
+                  np.mean(maps_recon[:,~unseen, i]), np.std(maps_recon[:,~unseen, i]),
+                  np.mean(diffmap[:,~unseen, i]), np.std(diffmap[:,~unseen, i])))
+
+
       if rank == 0:
             print('************************** Map-Making on {} sub-map(s) - Rank {} Done'.format(nf_sub_rec,rank))
 

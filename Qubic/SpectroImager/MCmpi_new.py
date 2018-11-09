@@ -61,7 +61,7 @@ d.read_from_file(dictfilename)
 print(sys.argv)
 print(arguments)
 for i in xrange(nargs):
-      #print('seeting: {0} to from {1} to {2}'.format(arguments[2*i],d[arguments[2*i]],arguments[2*i+1]))
+      print('seeting: {0} to from {1} to {2}'.format(arguments[2*i],d[arguments[2*i]],arguments[2*i+1]))
       d[arguments[2*i]] = type(d[arguments[2*i]])(arguments[2*i+1])
 
 

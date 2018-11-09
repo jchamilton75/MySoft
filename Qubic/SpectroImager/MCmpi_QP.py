@@ -6,7 +6,7 @@ import numpy as np
 
 import matplotlib.pyplot as mp
 import qubic
-from SpectroImager import SpectroImLib as si
+from SpectroImager import SpectroImLibQP as si
 from pysimulators import FitsArray
 import time
 
@@ -36,23 +36,24 @@ if rank == 0:
 
 
 #### Reading input dictionary and replacing with command line arguments the default params ###########################
-dictfilename = sys.argv[1]
-name = sys.argv[2]
-tol = float(sys.argv[3])
-minnfreq = int(sys.argv[4])
-maxnfreq = int(sys.argv[5])
-import distutils.util
-noI = distutils.util.strtobool(sys.argv[6])
-arguments = sys.argv[7:]
-nargs = int(len(arguments)/2)
-
-# dictfilename = '/Users/hamilton/Qubic/SpectroImager/testFI.dict'
-# name = 'Test'
-# tol = 1e-3
-# minnfreq = 1
-# maxnfreq = 3
-# arguments = ['npointings', '100', 'seed',  '1', 'nf_sub', '15','noI', False]
+# dictfilename = sys.argv[1]
+# name = sys.argv[2]
+# tol = float(sys.argv[3])
+# minnfreq = int(sys.argv[4])
+# maxnfreq = int(sys.argv[5])
+# import distutils.util
+# noI = distutils.util.strtobool(sys.argv[6])
+# arguments = sys.argv[7:]
 # nargs = int(len(arguments)/2)
+
+dictfilename = '/Users/hamilton/Qubic/SpectroImager/testFI.dict'
+name = 'Test_Q'
+tol = 1e-4
+minnfreq = 1
+maxnfreq = 3
+noI = False
+arguments = ['npointings', '1000', 'seed',  '1', 'nf_sub', '15', 'photon_noise', False, 'detector_nep', '1e-20']
+nargs = int(len(arguments)/2)
 
 
 d = qubic.qubicdict.qubicDict()
@@ -90,11 +91,11 @@ if rank==0:
       print('********************* Input Sky - Rank {} - done in {} seconds'.format(rank, t1-t0))
 else:
       x0 = None
+      x0_Planck = None
       t0 = time.time()
 
 
 x0 = MPI.COMM_WORLD.bcast(x0)
-#print('rank {} {} {}'.format(rank, x0[0], x0[1]))
 
 
 ##### Pointing in not picklable so cannot be broadcasted => done on all ranks simultaneously
@@ -117,11 +118,12 @@ if rank == 0:
 
 
 
+
 for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       ##### Mapmaking
       if rank == 0:
             print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
-      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0)
+      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0, PlanckMaps=x0)
       if nf_sub_rec==1: maps_recon=np.reshape(maps_recon, np.shape(maps_convolved))
       cov = np.sum(cov, axis=0)
       maxcov = np.max(cov)

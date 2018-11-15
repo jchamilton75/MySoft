@@ -111,24 +111,40 @@ def create_acquisition_operator_REC(pointing, d, nf_sub_rec, PlanckMaps=None):
 
 
 
-def create_TOD(d, pointing, x0):
+def create_TOD(d, pointing, x0, return_convolved=True):
   atod = create_acquisition_operator_TOD(pointing, d)
   TOD, maps_convolved_useless = atod.get_observation(x0, noiseless=d['noiseless'])
-  maps_convolved_useless=0
-  return TOD
+  if return_convolved:
+    return TOD, np.array(maps_convolved_useless)
+  else:
+    maps_convolved_useless=0
+    return TOD
 
-def reconstruct_maps(TOD, d, pointing, nf_sub_rec, x0=None, tol=1e-4, PlanckMaps=None):
+def reconstruct_maps(TOD, d, pointing, nf_sub_rec, x0=None, tol=1e-4, PlanckMaps=None,guess=None):
   Nbfreq, nus_edge, nus, deltas, Delta, Nbbands = qubic.compute_freq(d['filter_nu']/1e9, 
                                               d['filter_relative_bandwidth'], nf_sub_rec)
   arec = create_acquisition_operator_REC(pointing, d, nf_sub_rec, PlanckMaps=PlanckMaps)
+  cov = np.sum(arec.get_coverage(), axis=0)
+  unseen = cov==0
+
+  if guess is not None:
+    sh = np.shape(guess)
+    theguess = np.zeros((nf_sub_rec, sh[1], sh[2]))
+    in_Nbfreq, in_nus_edge, in_nus, in_deltas, in_Delta, in_Nbbands = qubic.compute_freq(d['filter_nu']/1e9, d['filter_relative_bandwidth'], d['nf_sub'])
+    for i in xrange(nf_sub_rec):
+      ok = (in_nus > nus_edge[i]) * (in_nus < nus_edge[i+1])
+      theguess[i,:,:] = np.mean(np.array(guess)[ok,:,:], axis=0)  
+      theguess[i,~unseen,:] = 0
+    if nf_sub_rec==1: theguess = theguess[0,:,:]
+    
+
   if PlanckMaps is None:
-    maps_recon = arec.tod2map(TOD, tol=tol, maxiter=1500)
-    cov = arec.get_coverage()
+    maps_recon = arec.tod2map(TOD, tol=tol, maxiter=1500,guess=theguess)
   else:
     obs_planck = arec.planck.get_observation(noiseless=True)
     obs = np.r_[TOD.ravel(), obs_planck.ravel()]
-    maps_recon = arec.tod2map(obs, tol=tol, maxiter=1500)
-    cov = arec.qubic.get_coverage()
+    maps_recon = arec.tod2map(obs, tol=tol, maxiter=1500, guess=theguess)
+    
 
   if x0 is None:
     return maps_recon, cov, nus, nus_edge

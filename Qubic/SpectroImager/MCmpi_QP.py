@@ -36,27 +36,29 @@ if rank == 0:
 
 
 #### Reading input dictionary and replacing with command line arguments the default params ###########################
-# dictfilename = sys.argv[1]
-# name = sys.argv[2]
-# tol = float(sys.argv[3])
-# minnfreq = int(sys.argv[4])
-# maxnfreq = int(sys.argv[5])
-# import distutils.util
-# noI = distutils.util.strtobool(sys.argv[6])
-# planck = distutils.util.strtobool(sys.argv[7])
-# arguments = sys.argv[8:]
-# nargs = int(len(arguments)/2)
-
-dictfilename = './testFI.dict'
-name = 'Outputs/Test_QP'
-tol = 1e-4
-minnfreq = 1
-maxnfreq = 3
-noI = False
-planck = False
-#arguments = ['npointings', '1000', 'seed',  '1', 'nf_sub', '15', 'dtheta', 5.]
-arguments=[]
+dictfilename = sys.argv[1]
+name = sys.argv[2]
+tol = float(sys.argv[3])
+minnfreq = int(sys.argv[4])
+maxnfreq = int(sys.argv[5])
+import distutils.util
+noI = distutils.util.strtobool(sys.argv[6])
+planck = distutils.util.strtobool(sys.argv[7])
+guess = distutils.util.strtobool(sys.argv[8])
+arguments = sys.argv[9:]
 nargs = int(len(arguments)/2)
+
+# dictfilename = '/Users/hamilton/Qubic/SpectroImager/testFI.dict'
+# name = '//Users/hamilton/Qubic/SpectroImager/toto'
+# tol = 1e-2
+# minnfreq = 1
+# maxnfreq = 3
+# noI = False
+# planck = False
+# guess = True
+# #arguments = ['npointings', '4000', 'seed',  '1', 'nf_sub', '15', 'noiseless', True]
+# arguments=[]
+# nargs = int(len(arguments)/2)
 
 
 d = qubic.qubicdict.qubicDict()
@@ -110,7 +112,7 @@ t2 = time.time()
 
 ##### TOD making is intrinsically parallelized (use of pyoperators)
 #print('-------------------------- TOD - rank {} Starting'.format(rank))
-TOD = si.create_TOD(d, p, x0)
+TOD, inconvolved = si.create_TOD(d, p, x0, return_convolved=True)
 #print('************************** TOD - rank {} Done - elaplsed time is {}'.format(rank,time.time()-t0))
 
 ##### Wait for all the TOD to be done (is it necessary ?)
@@ -124,15 +126,20 @@ if rank == 0:
 
 for nf_sub_rec in np.arange(minnfreq,maxnfreq+1):
       ##### Mapmaking
+      if guess==True:
+            print('*******************   Using Initial Guess')
+            initial_guess=inconvolved
+      else:
+            initial_guess=None
+
       if rank == 0:
             print('-------------------------- Map-Making on {} sub-map(s) - Rank {} Starting'.format(nf_sub_rec,rank))
       if planck:
             PlanckMaps=x0
       else:
             PlanckMaps=None
-      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0, PlanckMaps=PlanckMaps)
+      maps_recon, cov, nus, nus_edge, maps_convolved = si.reconstruct_maps(TOD, d, p, nf_sub_rec, tol=tol, x0=x0, PlanckMaps=PlanckMaps,guess=initial_guess)
       if nf_sub_rec==1: maps_recon=np.reshape(maps_recon, np.shape(maps_convolved))
-      cov = np.sum(cov, axis=0)
       maxcov = np.max(cov)
       unseen = cov < maxcov*0.1
       diffmap = maps_convolved - maps_recon
